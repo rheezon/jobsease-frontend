@@ -2277,18 +2277,41 @@
   background: #30B04A;
 }
 
-.mark-viewed-button {
-  background: var(--secondary-color);
-  color: var(--text-white);
-  padding: var(--spacing-xs) var(--spacing-sm);
-  border-radius: var(--radius-sm);
-  font-size: var(--font-size-xs);
-  font-weight: var(--font-weight-semibold);
-  letter-spacing: -0.01em;
+.mark-applied-button {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: #FFFFFF;
+  border: 2px solid #6366F1;
+  border-radius: 8px;
+  color: #6366F1;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex: 1;
+  justify-content: center;
+  min-width: 140px;
 }
 
-.mark-viewed-button:hover {
-  background: #6D6D70;
+.mark-applied-button:hover {
+  background: #6366F1;
+  color: #FFFFFF;
+  transform: translateY(-1px);
+}
+
+.mark-applied-button:disabled {
+  background: #F3F4F6;
+  border-color: #D1D5DB;
+  color: #9CA3AF;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+.mark-applied-button:disabled:hover {
+  transform: none;
+  box-shadow: none;
 }
 
 .notification-details {
@@ -5611,6 +5634,18 @@ input:checked + .slider:before {
   color: var(--text-primary);
 }
 
+.job-tab-button:hover {
+  color: #4F46E5 !important;
+}
+
+[data-theme="dark"] .job-tab-button {
+  color: #9CA3AF;
+}
+
+[data-theme="dark"] .job-tab-button:hover {
+  color: #A5B4FC !important;
+}
+
 /* Education Display (Read-only in CreateNotifier/EditNotifier) */
 .education-display-card {
   background: #F9FAFB;
@@ -5740,9 +5775,176 @@ input:checked + .slider:before {
   color: #FFFFFF;
 }
 
+[data-theme="dark"] .mark-applied-button {
+  background: var(--bg-card);
+  border-color: #6366F1;
+  color: #A5B4FC;
+}
+
+[data-theme="dark"] .mark-applied-button:hover {
+  background: #6366F1;
+  color: #FFFFFF;
+}
+
+[data-theme="dark"] .mark-applied-button:disabled {
+  background: var(--bg-tertiary);
+  border-color: #4B5563;
+  color: #6B7280;
+}
+
 [data-theme="dark"] .filter-active-info {
   background: rgba(99, 102, 241, 0.1);
   color: #A78BFA;
+}
+
+/* Job Insights Dashboard Styles */
+.insights-card {
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  transition: all 0.3s ease;
+}
+
+.insights-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+}
+
+.insights-section {
+  margin-bottom: 24px;
+}
+
+.insights-section-title {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: var(--text-primary);
+}
+
+/* Calendar styling */
+.rbc-calendar {
+  font-family: inherit;
+  background: var(--bg-card);
+  color: var(--text-primary);
+}
+
+.rbc-header {
+  padding: 12px 0;
+  font-weight: 600;
+  color: var(--text-primary);
+  background: var(--bg-secondary);
+  border-bottom: 2px solid var(--border-color);
+}
+
+.rbc-today {
+  background-color: rgba(99, 102, 241, 0.1);
+}
+
+.rbc-off-range-bg {
+  background: var(--bg-tertiary);
+}
+
+.rbc-date-cell {
+  padding: 8px;
+  color: var(--text-primary);
+}
+
+.rbc-event {
+  padding: 2px 5px;
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+.rbc-toolbar {
+  padding: 16px;
+  margin-bottom: 16px;
+  background: var(--bg-secondary);
+  border-radius: 8px;
+}
+
+.rbc-toolbar button {
+  color: var(--text-primary);
+  border: 1px solid var(--border-color);
+  padding: 8px 16px;
+  background: var(--bg-card);
+  border-radius: 6px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.rbc-toolbar button:hover {
+  background: #6366F1;
+  color: white;
+  border-color: #6366F1;
+}
+
+.rbc-toolbar button.rbc-active {
+  background: #6366F1;
+  color: white;
+  border-color: #6366F1;
+}
+
+.rbc-month-view {
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.rbc-day-bg {
+  border-left: 1px solid var(--border-color);
+}
+
+.rbc-month-row {
+  border-top: 1px solid var(--border-color);
+}
+
+/* Dark theme for calendar */
+[data-theme="dark"] .rbc-calendar {
+  background: var(--bg-card);
+}
+
+[data-theme="dark"] .rbc-header {
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .rbc-off-range {
+  color: #6B7280;
+}
+
+[data-theme="dark"] .rbc-today {
+  background-color: rgba(99, 102, 241, 0.2);
+}
+
+[data-theme="dark"] .rbc-month-view {
+  border-color: var(--border-color);
+  background: var(--bg-card);
+}
+
+[data-theme="dark"] .rbc-day-bg {
+  border-color: var(--border-color);
+}
+
+[data-theme="dark"] .rbc-month-row {
+  border-color: var(--border-color);
+}
+
+/* Recharts dark theme customization */
+[data-theme="dark"] .recharts-cartesian-axis-tick-value {
+  fill: var(--text-secondary);
+}
+
+[data-theme="dark"] .recharts-legend-item-text {
+  color: var(--text-primary) !important;
+}
+
+[data-theme="dark"] .recharts-default-tooltip {
+  background-color: var(--bg-card) !important;
+  border-color: var(--border-color) !important;
+  color: var(--text-primary) !important;
 }
 
 /* Modal Styles */

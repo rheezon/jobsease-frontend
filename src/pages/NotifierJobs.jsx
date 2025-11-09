@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { notifierService, notificationService } from '../services/api';
 import { useAuth } from '../components/AuthProvider';
-import { ArrowLeft, Briefcase, MapPin, DollarSign, Star, Save as SaveIcon, FileText as FileIcon, Edit, Trash2, Building, Clock, Users, ExternalLink, Eye, X, ChevronDown, ChevronUp, Moon, Sun, User, Calendar, AlertCircle } from 'lucide-react';
+import { ArrowLeft, Briefcase, MapPin, DollarSign, Star, Save as SaveIcon, FileText as FileIcon, Edit, Trash2, Building, Clock, Users, ExternalLink, Eye, X, ChevronDown, ChevronUp, Moon, Sun, User, Calendar, AlertCircle, CheckCircle } from 'lucide-react';
 import ConfirmDialog from '../components/ConfirmDialog';
 
 const NotifierJobs = () => {
@@ -23,6 +23,9 @@ const NotifierJobs = () => {
   const [currentResumeUrl, setCurrentResumeUrl] = useState('');
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
+  
+  // Tab state for applied/not applied
+  const [activeTab, setActiveTab] = useState('not-applied'); // 'not-applied' or 'applied'
   
   // Filter states
   const [filterCompany, setFilterCompany] = useState('');
@@ -86,8 +89,16 @@ const NotifierJobs = () => {
     }
   };
 
-  // Filter jobs based on filter criteria
+  // Filter jobs based on active tab and filter criteria
   const filteredJobs = jobs.filter(job => {
+    // Filter by tab (applied vs not applied)
+    if (activeTab === 'not-applied' && job.applied) {
+      return false;
+    }
+    if (activeTab === 'applied' && !job.applied) {
+      return false;
+    }
+    
     const matchesCompany = !filterCompany || job.companyName.toLowerCase().includes(filterCompany.toLowerCase());
     const matchesLocation = !filterLocation || job.location.toLowerCase().includes(filterLocation.toLowerCase());
     
@@ -98,8 +109,22 @@ const NotifierJobs = () => {
       matchesDate = jobDate.toDateString() === filterDateObj.toDateString();
     }
     
-    return matchesCompany && matchesLocation && matchesDate;
+    // Only apply deadline filter for not-applied tab
+    let deadlineNotPassed = true;
+    if (activeTab === 'not-applied' && job.deadline) {
+      const deadlineDate = new Date(job.deadline);
+      const today = new Date();
+      deadlineDate.setHours(0, 0, 0, 0);
+      today.setHours(0, 0, 0, 0);
+      deadlineNotPassed = deadlineDate >= today;
+    }
+    
+    return matchesCompany && matchesLocation && matchesDate && deadlineNotPassed;
   });
+
+  // Calculate counts for tabs
+  const notAppliedCount = jobs.filter(job => !job.applied && (!job.deadline || new Date(job.deadline) >= new Date())).length;
+  const appliedCount = jobs.filter(job => job.applied).length;
 
   const clearFilters = () => {
     setFilterCompany('');
@@ -139,6 +164,25 @@ const NotifierJobs = () => {
           setJobs(jobs.filter(job => job.id !== notificationId));
         } catch (err) {
           setError(err.message || 'Failed to delete notification');
+        }
+      }
+    });
+  };
+
+  const handleMarkAsApplied = (jobId) => {
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Mark as Applied',
+      message: 'Once marked as applied, you won\'t be able to change this status again. Only confirm if you have actually applied to this job.',
+      variant: 'warning',
+      confirmText: 'Yes, I Applied',
+      onConfirm: async () => {
+        try {
+          await notificationService.markAsApplied(jobId);
+          // Remove the job from local state
+          setJobs(jobs.filter(job => job.id !== jobId));
+        } catch (err) {
+          setError(err.message || 'Failed to mark as applied');
         }
       }
     });
@@ -474,35 +518,83 @@ const NotifierJobs = () => {
         <div className="notifier-jobs-listing">
           {/* Job Notifications Section Header */}
           {jobs.length > 0 && (
-            <div className="job-notifications-header" style={{
-              marginTop: '32px',
-              marginBottom: '24px',
-              paddingBottom: '16px',
-              borderBottom: '2px solid #E5E7EB'
-            }}>
-              <h2 style={{
-                margin: 0,
-                fontSize: '24px',
-                fontWeight: 600,
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px'
+            <>
+              <div className="job-notifications-header" style={{
+                marginTop: '32px',
+                marginBottom: '24px',
+                paddingBottom: '16px',
+                borderBottom: '2px solid #E5E7EB'
               }}>
-                <Briefcase size={28} style={{ color: '#6366F1' }} />
-                Job Notifications
-                <span style={{
-                  padding: '4px 12px',
-                  background: 'linear-gradient(135deg, #6366F1 0%, #4F46E5 100%)',
-                  color: 'white',
-                  borderRadius: '20px',
-                  fontSize: '14px',
+                <h2 style={{
+                  margin: 0,
+                  fontSize: '24px',
                   fontWeight: 600,
-                  marginLeft: '8px'
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px'
                 }}>
-                  {jobs.length}
-                </span>
-              </h2>
-            </div>
+                  <Briefcase size={28} style={{ color: '#6366F1' }} />
+                  Job Notifications
+                  <span style={{
+                    padding: '4px 12px',
+                    background: 'linear-gradient(135deg, #6366F1 0%, #4F46E5 100%)',
+                    color: 'white',
+                    borderRadius: '20px',
+                    fontSize: '14px',
+                    fontWeight: 600,
+                    marginLeft: '8px'
+                  }}>
+                    {notAppliedCount}
+                  </span>
+                </h2>
+              </div>
+
+              {/* Tabs for Applied/Not Applied */}
+              <div style={{
+                display: 'flex',
+                gap: '12px',
+                marginBottom: '24px',
+                borderBottom: '2px solid #E5E7EB',
+                paddingBottom: '0'
+              }}>
+                <button
+                  onClick={() => setActiveTab('not-applied')}
+                  style={{
+                    padding: '12px 24px',
+                    background: 'none',
+                    border: 'none',
+                    borderBottom: activeTab === 'not-applied' ? '3px solid #6366F1' : '3px solid transparent',
+                    color: activeTab === 'not-applied' ? '#6366F1' : '#6B7280',
+                    fontSize: '15px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    marginBottom: '-2px'
+                  }}
+                  className="job-tab-button"
+                >
+                  Not Applied ({notAppliedCount})
+                </button>
+                <button
+                  onClick={() => setActiveTab('applied')}
+                  style={{
+                    padding: '12px 24px',
+                    background: 'none',
+                    border: 'none',
+                    borderBottom: activeTab === 'applied' ? '3px solid #6366F1' : '3px solid transparent',
+                    color: activeTab === 'applied' ? '#6366F1' : '#6B7280',
+                    fontSize: '15px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    marginBottom: '-2px'
+                  }}
+                  className="job-tab-button"
+                >
+                  Applied ({appliedCount})
+                </button>
+              </div>
+            </>
           )}
           
           {/* Filter Section */}
@@ -835,12 +927,32 @@ const NotifierJobs = () => {
                     >
                       <Eye size={18} /> View Resume
                     </button>
-                    <button 
-                      onClick={() => window.open(job.jobLink, '_blank')}
-                      className="apply-now-btn"
-                    >
-                      <ExternalLink size={18} /> Apply Now
-                    </button>
+                    {activeTab === 'not-applied' && (
+                      <>
+                        <button 
+                          onClick={() => handleMarkAsApplied(job.id)}
+                          className="mark-applied-button"
+                          title="Mark as applied and remove from list"
+                        >
+                          <CheckCircle size={18} /> 
+                          Mark as Applied
+                        </button>
+                        <button 
+                          onClick={() => window.open(job.jobLink, '_blank')}
+                          className="apply-now-btn"
+                        >
+                          <ExternalLink size={18} /> Apply Now
+                        </button>
+                      </>
+                    )}
+                    {activeTab === 'applied' && (
+                      <button 
+                        onClick={() => window.open(job.jobLink, '_blank')}
+                        className="view-resume-btn"
+                      >
+                        <ExternalLink size={18} /> View Job
+                      </button>
+                    )}
                     </div>
                 </div>
               ))}

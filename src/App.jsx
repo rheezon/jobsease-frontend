@@ -14,6 +14,7 @@ import Settings from './pages/Settings';
 import CreateNotifier from './pages/CreateNotifier';
 import EditNotifier from './pages/EditNotifier';
 import NotifierJobs from './pages/NotifierJobs';
+import JobInsights from './pages/JobInsights';
 import './App.css';
 
 // Component to handle theme based on route
@@ -97,6 +98,11 @@ function App() {
             <Route path="/notifier/:id" element={
               <ProtectedRoute>
                 <NotifierJobs />
+              </ProtectedRoute>
+            } />
+            <Route path="/job-insights" element={
+              <ProtectedRoute>
+                <JobInsights />
               </ProtectedRoute>
             } />
             <Route path="/" element={<Navigate to="/dashboard" replace />} />

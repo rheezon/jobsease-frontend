@@ -7,7 +7,7 @@ import {
   Search, Home, User, FileText, MessageCircle, Compass, 
   Gift, ChevronDown, Filter, SortAsc, AlertCircle, CheckCircle,
   X, Wifi, Building, Users, Star, Clock, TrendingUp, Eye, Trash2, ArrowLeft, Edit,
-  Moon, Sun
+  Moon, Sun, BarChart3
 } from 'lucide-react';
 import ConfirmDialog from '../components/ConfirmDialog';
 
@@ -181,6 +181,7 @@ const Dashboard = () => {
     { id: 'notifiers', label: `Notifiers ${notifiers.length}`, icon: Briefcase, active: activeTab === 'notifiers', onClick: () => setActiveTab('notifiers') },
     { id: 'drafts', label: `Drafts ${drafts.length}`, icon: FileText, active: activeTab === 'drafts', onClick: () => setActiveTab('drafts') },
     { id: 'add-notifier', label: 'Add Notifier', icon: Plus, onClick: () => navigate('/create-notifier'), isHighlight: true },
+    { id: 'job-insights', label: 'Job Insights', icon: BarChart3, onClick: () => navigate('/job-insights') },
     { id: 'profile', label: 'Profile', icon: User, onClick: () => navigate('/profile') },
     { id: 'settings', label: 'Settings', icon: SettingsIcon, onClick: () => navigate('/settings') },
     { id: 'logout', label: 'Logout', icon: LogOut, onClick: handleLogout, isDanger: true },
@@ -292,10 +293,30 @@ const Dashboard = () => {
               <div className="section-header">
                 <h1 className="section-title">Your Job Notifiers</h1>
                 <p className="section-subtitle">Create and manage your job notifiers</p>
-                <button onClick={() => navigate('/create-notifier')} className="primary-button add-notifier-btn">
-                  <Plus size={16} />
-                  Add Notifier
-                </button>
+                <div style={{ display: 'flex', gap: '12px' }}>
+                  <button onClick={() => navigate('/job-insights')} className="secondary-button" style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '12px 20px',
+                    background: 'linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '10px',
+                    fontWeight: 600,
+                    fontSize: '14px',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    boxShadow: '0 2px 8px rgba(139, 92, 246, 0.3)'
+                  }}>
+                    <BarChart3 size={16} />
+                    Job Insights
+                  </button>
+                  <button onClick={() => navigate('/create-notifier')} className="primary-button add-notifier-btn">
+                    <Plus size={16} />
+                    Add Notifier
+                  </button>
+                </div>
               </div>
 
               {/* Search Bar */}

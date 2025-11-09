@@ -244,8 +244,8 @@ export const notificationService = {
     const { data } = await api.get(`/notifications/notifier/${notifierId}`);
     return data;
   },
-  markAsViewed: async (notificationId) => {
-    const { data } = await api.put(`/notifications/${notificationId}/viewed`);
+  markAsApplied: async (notificationId) => {
+    const { data } = await api.put(`/notifications/${notificationId}/applied`);
     return data;
   },
   delete: async (notificationId) => {
