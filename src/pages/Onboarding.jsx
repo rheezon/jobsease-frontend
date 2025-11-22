@@ -8,7 +8,6 @@ import {
   X, Wifi, Building, Users, Star, Clock, TrendingUp, Eye, Trash2,
   Upload, Download, Edit3, Save, Moon, Sun
 } from 'lucide-react';
-import { logger } from '../utils/logger';
 import { notifierService, userInfoService } from '../services/api';
 import ConfirmDialog from '../components/ConfirmDialog';
 
@@ -139,7 +138,9 @@ const Onboarding = () => {
     'Version Control', 'Git', 'SVN', 'Mercurial', 'GitHub', 'GitLab', 'Bitbucket'
   ];
 
-  logger.debug('Onboarding component rendered', { userPresent: !!user, isLoading });
+  if (!import.meta.env.PROD) {
+    try { console.debug('[DEBUG] Onboarding component rendered', { userPresent: !!user, isLoading }); } catch {}
+  }
 
   useEffect(() => {
     if (user) {
@@ -300,7 +301,7 @@ const Onboarding = () => {
       navigate('/dashboard');
     } catch (err) {
       setError(err.message || 'An error occurred. Please try again.');
-      logger.error('Onboarding submit failed', { error: String(err?.message || err) });
+      try { console.error('[ERROR] Onboarding submit failed', { error: String(err?.message || err) }); } catch {}
     } finally {
       setIsLoading(false);
     }

@@ -6,7 +6,6 @@ import {
   User, LogOut, ArrowLeft, Mail, ChevronDown, Moon, Sun, Edit2, Save, X as XIcon, Plus, Trash2
 } from 'lucide-react';
 import ConfirmDialog from '../components/ConfirmDialog';
-import { logger } from '../utils/logger';
 
 const Profile = () => {
   const { user, logout } = useAuth();
@@ -32,7 +31,7 @@ const Profile = () => {
         const records = await userInfoService.getAll();
         setEducationRecords(records);
       } catch (error) {
-        logger.error('Error fetching education details', { error: String(error?.message || error) });
+        try { console.error('[ERROR] Error fetching education details', { error: String(error?.message || error) }); } catch {}
       } finally {
         setLoading(false);
       }
@@ -167,7 +166,7 @@ const Profile = () => {
       setEditedRecords([]);
       setValidationErrors({});
     } catch (error) {
-      logger.error('Error updating education details', { error: String(error?.message || error) });
+      try { console.error('[ERROR] Error updating education details', { error: String(error?.message || error) }); } catch {}
       // Do not alert; field errors are shown inline for validation issues
     } finally {
       setIsSaving(false);

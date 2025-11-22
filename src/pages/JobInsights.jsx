@@ -9,7 +9,6 @@ import {
 import { Calendar, momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
-import { logger } from '../utils/logger';
 import {
   TrendingUp, Calendar as CalendarIcon, BarChart3,
   Briefcase, CheckCircle, Clock, AlertCircle, DollarSign,
@@ -62,7 +61,7 @@ const JobInsights = () => {
       const jobs = jobsArrays.flat();
       setAllJobs(jobs);
     } catch (err) {
-      logger.error('Failed to fetch data for JobInsights', { error: String(err?.message || err) });
+      try { console.error('[ERROR] Failed to fetch data for JobInsights', { error: String(err?.message || err) }); } catch {}
     } finally {
       setLoading(false);
     }

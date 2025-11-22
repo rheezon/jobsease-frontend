@@ -8,7 +8,6 @@ import { extractResumeData, formatResumeData, generateLatexFromData } from '../u
 import { Upload, FileText, ArrowLeft, AlertCircle, Save as SaveIcon, Trash2, X, ChevronDown, Moon, Sun, User as UserIcon } from 'lucide-react';
 import { useAuth } from '../components/AuthProvider';
 import ConfirmDialog from '../components/ConfirmDialog';
-import { logger } from '../utils/logger';
 
 const schema = yup.object({
   name: yup.string().required('Notifier name is required'),
@@ -116,7 +115,7 @@ const CreateNotifier = () => {
         const records = await userInfoService.getAll();
         setEducationRecords(records || []);
       } catch (err) {
-        logger.error('Failed to fetch education records', { error: String(err?.message || err) });
+        try { console.error('[ERROR] Failed to fetch education records', { error: String(err?.message || err) }); } catch {}
       }
     };
     fetchEducation();
