@@ -9,6 +9,7 @@ import {
 import { Calendar, momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
+import { logger } from '../utils/logger';
 import {
   TrendingUp, Calendar as CalendarIcon, BarChart3,
   Briefcase, CheckCircle, Clock, AlertCircle, DollarSign,
@@ -61,7 +62,7 @@ const JobInsights = () => {
       const jobs = jobsArrays.flat();
       setAllJobs(jobs);
     } catch (err) {
-      console.error('Failed to fetch data:', err);
+      logger.error('Failed to fetch data for JobInsights', { error: String(err?.message || err) });
     } finally {
       setLoading(false);
     }
@@ -193,17 +194,17 @@ const JobInsights = () => {
             <ArrowLeft size={20} />
             Back to Dashboard
           </button>
-          <span className="logo-text">Jobsease</span>
+          <span className="logo-text">Jobease</span>
         </div>
         <div className="header-right" style={{ position: 'relative' }}>
-          <div className="theme-toggle-switch" onClick={toggleTheme}>
+          <div className="theme-toggle-switch" onClick={toggleTheme} aria-label="Toggle theme" title="Toggle theme" role="button">
             <div className={`toggle-track-theme ${theme === 'dark' ? 'active' : ''}`}>
               <div className="toggle-thumb-theme">
                 {theme === 'light' ? <Sun size={28} /> : <Moon size={28} />}
               </div>
             </div>
           </div>
-          <div className="user-profile" onClick={() => setShowUserMenu(v => !v)} style={{ cursor: 'pointer' }}>
+          <div className="user-profile" onClick={() => setShowUserMenu(v => !v)} style={{ cursor: 'pointer' }} aria-label="Open user menu" title="Open user menu" role="button">
             <span className="welcome-text">{user?.fullName?.split(' ')[0] || 'User'}</span>
             <div className="user-avatar">
               {user?.profilePhoto ? (

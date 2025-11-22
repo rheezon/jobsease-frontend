@@ -8,6 +8,7 @@ import { extractResumeData, formatResumeData, generateLatexFromData } from '../u
 import { Upload, FileText, ArrowLeft, AlertCircle, X, Plus, ChevronDown, Moon, Sun, User as UserIcon } from 'lucide-react';
 import { useAuth } from '../components/AuthProvider';
 import ConfirmDialog from '../components/ConfirmDialog';
+import { logger } from '../utils/logger';
 
 const schema = yup.object({
   name: yup.string().required('Notifier name is required'),
@@ -112,7 +113,7 @@ const EditNotifier = () => {
         const records = await userInfoService.getAll();
         setEducationRecords(records || []);
       } catch (err) {
-        console.error('Failed to fetch education records:', err);
+        logger.error('Failed to fetch education records', { error: String(err?.message || err) });
       }
     };
     fetchEducation();
@@ -254,17 +255,17 @@ const EditNotifier = () => {
             <ArrowLeft size={20} />
             Back to Dashboard
           </button>
-          <span className="logo-text">Jobsease</span>
+          <span className="logo-text">Jobease</span>
         </div>
         <div className="header-right" style={{ position: 'relative' }}>
-          <div className="theme-toggle-switch" onClick={toggleTheme}>
+          <div className="theme-toggle-switch" onClick={toggleTheme} aria-label="Toggle theme" title="Toggle theme" role="button">
             <div className={`toggle-track-theme ${theme === 'dark' ? 'active' : ''}`}>
               <div className="toggle-thumb-theme">
                 {theme === 'light' ? <Sun size={28} /> : <Moon size={28} />}
               </div>
             </div>
           </div>
-          <div className="user-profile" onClick={() => setShowUserMenu(v => !v)} style={{ cursor: 'pointer' }}>
+          <div className="user-profile" onClick={() => setShowUserMenu(v => !v)} style={{ cursor: 'pointer' }} aria-label="Open user menu" title="Open user menu" role="button">
             <span className="welcome-text">{user?.fullName?.split(' ')[0] || 'User'}</span>
             <div className="user-avatar">
               {user?.profilePhoto ? (
@@ -375,7 +376,8 @@ const EditNotifier = () => {
                 className={errors.salaryExpectation ? 'error' : ''}
                 defaultValue=""
               >
-                <option value="" disabled selected>Select salary range</option>
+                <option value="" disabled>Select salary range</option>
+                {/* Standardized values */}
                 <option value="0-2 LPA">0-2 LPA</option>
                 <option value="2-5 LPA">2-5 LPA</option>
                 <option value="5-10 LPA">5-10 LPA</option>
@@ -383,6 +385,13 @@ const EditNotifier = () => {
                 <option value="15-25 LPA">15-25 LPA</option>
                 <option value="25-50 LPA">25-50 LPA</option>
                 <option value="50+ LPA">50+ LPA</option>
+                {/* Backward-compat values from older notifiers */}
+                <option value="0-2lpa">0-2 LPA</option>
+                <option value="2-5lpa">2-5 LPA</option>
+                <option value="5-10lpa">5-10 LPA</option>
+                <option value="10-15lpa">10-15 LPA</option>
+                <option value="15-25lpa">15-25 LPA</option>
+                <option value="25-50lpa">25-50 LPA</option>
               </select>
               {errors.salaryExpectation && <span className="field-error">{errors.salaryExpectation.message}</span>}
             </div>
@@ -427,6 +436,7 @@ const EditNotifier = () => {
                 defaultValue=""
               >
                 <option value="" disabled>Select notice period</option>
+                {/* Standardized values */}
                 <option value="Immediate">Immediate</option>
                 <option value="7 days">7 days</option>
                 <option value="15 days">15 days</option>
@@ -434,6 +444,12 @@ const EditNotifier = () => {
                 <option value="45 days">45 days</option>
                 <option value="60 days">60 days</option>
                 <option value="90 days">90 days</option>
+                {/* Backward-compat values from onboarding */}
+                <option value="Immediate / 0-15 days">Immediate / 0-15 days</option>
+                <option value="1 Month">1 Month</option>
+                <option value="2 Months">2 Months</option>
+                <option value="3 Months">3 Months</option>
+                <option value="Currently Serving Notice">Currently Serving Notice</option>
               </select>
               {errors.noticePeriod && <span className="field-error">{errors.noticePeriod.message}</span>}
             </div>
@@ -450,6 +466,8 @@ const EditNotifier = () => {
                         type="button"
                         onClick={() => removeSkill(skill)}
                         className="skill-remove"
+                        aria-label={`Remove skill ${skill}`}
+                        title={`Remove skill ${skill}`}
                       >
                         <X size={14} />
                       </button>

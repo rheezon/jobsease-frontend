@@ -46,7 +46,7 @@ const Notifications = () => {
       {
         id: 2,
         title: 'Profile Update Reminder',
-        company: 'Jobsease',
+        company: 'Jobease',
         location: '',
         salary: '',
         type: 'system',
@@ -72,7 +72,7 @@ const Notifications = () => {
       {
         id: 4,
         title: 'Weekly Job Digest',
-        company: 'Jobsease',
+        company: 'Jobease',
         location: '',
         salary: '',
         type: 'digest',
@@ -138,7 +138,7 @@ const Notifications = () => {
       <header className="dashboard-header">
         <div className="header-left">
           <div className="logo">
-            <span className="logo-text">Jobsease</span>
+            <span className="logo-text">Jobease</span>
           </div>
         </div>
         

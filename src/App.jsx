@@ -39,6 +39,21 @@ function ThemeManager() {
 }
 
 function App() {
+  // Remove any unexpected/legacy localStorage keys on app start
+  useEffect(() => {
+    try {
+      const allowedKeys = new Set(['theme', 'token', 'user', 'hasSeenWelcomeBanner']);
+      for (let i = localStorage.length - 1; i >= 0; i--) {
+        const key = localStorage.key(i);
+        if (key && !allowedKeys.has(key)) {
+          localStorage.removeItem(key);
+        }
+      }
+    } catch (_) {
+      // ignore cleanup errors
+    }
+  }, []);
+
   // Load theme on app start
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme') || 'light';

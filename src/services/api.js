@@ -88,17 +88,37 @@ api.interceptors.response.use(
 );
 
 export const authService = {
+  googleLogin: async (idToken) => {
+    try {
+      const { data } = await api.post('/auth/google', { idToken });
+      return {
+        token: data.token,
+        user: {
+          id: data.userId,
+          email: data.email,
+          fullName: data.fullName,
+        },
+      };
+    } catch (error) {
+      throw new Error(getErrorMessage(error));
+    }
+  },
+
   signup: async (email, password, fullName) => {
-    const payload = { email, password, fullName };
-    const { data } = await api.post('/auth/signup', payload);
-    return {
-      token: data.token,
-      user: {
-        id: data.userId,
-        email: data.email,
-        fullName: data.fullName,
-      },
-    };
+    try {
+      const payload = { email, password, fullName };
+      const { data } = await api.post('/auth/signup', payload);
+      return {
+        token: data.token,
+        user: {
+          id: data.userId,
+          email: data.email,
+          fullName: data.fullName,
+        },
+      };
+    } catch (error) {
+      throw new Error(getErrorMessage(error));
+    }
   },
 
   login: async (email, password) => {
@@ -196,60 +216,117 @@ export const authService = {
 // Notifier Service -> backend integration
 export const notifierService = {
   getAll: async () => {
-    const { data } = await api.get('/notifiers');
-    return data; // array of NotifierResponse
+    try {
+      const { data } = await api.get('/notifiers');
+      return data; // array of NotifierResponse
+    } catch (error) {
+      throw new Error(getErrorMessage(error));
+    }
   },
 
   getById: async (id) => {
-    const { data } = await api.get(`/notifiers/${id}`);
-    return data;
+    try {
+      const { data } = await api.get(`/notifiers/${id}`);
+      return data;
+    } catch (error) {
+      throw new Error(getErrorMessage(error));
+    }
   },
 
   create: async (notifierData) => {
-    const { data } = await api.post('/notifiers', notifierData);
-    return data;
+    try {
+      const { data } = await api.post('/notifiers', notifierData);
+      return data;
+    } catch (error) {
+      throw new Error(getErrorMessage(error));
+    }
   },
 
   update: async (id, notifierData) => {
-    const { data } = await api.put(`/notifiers/${id}`, notifierData);
-    return data;
+    try {
+      const { data } = await api.put(`/notifiers/${id}`, notifierData);
+      return data;
+    } catch (error) {
+      throw new Error(getErrorMessage(error));
+    }
   },
 
   delete: async (id) => {
-    const { data } = await api.delete(`/notifiers/${id}`);
-    return data;
+    try {
+      const { data } = await api.delete(`/notifiers/${id}`);
+      return data;
+    } catch (error) {
+      throw new Error(getErrorMessage(error));
+    }
   },
 
   updateResume: async (id, resumeLatex) => {
-    const { data } = await api.patch(`/notifiers/${id}/resume`, {
-      resumeLatex: resumeLatex
-    });
-    return data;
+    try {
+      const { data } = await api.patch(`/notifiers/${id}/resume`, {
+        resumeLatex: resumeLatex
+      });
+      return data;
+    } catch (error) {
+      throw new Error(getErrorMessage(error));
+    }
   },
 
   compileResume: async (id) => {
-    const { data } = await api.post(`/notifiers/${id}/resume/compile`);
-    return data;
+    try {
+      const { data } = await api.post(`/notifiers/${id}/resume/compile`);
+      return data;
+    } catch (error) {
+      throw new Error(getErrorMessage(error));
+    }
   },
 
   toggleActive: async (id) => {
-    const { data } = await api.patch(`/notifiers/${id}/toggle-active`);
-    return data;
+    try {
+      const { data } = await api.patch(`/notifiers/${id}/toggle-active`);
+      return data;
+    } catch (error) {
+      throw new Error(getErrorMessage(error));
+    }
   },
 };
 
 // Notification Service -> backend integration (if needed)
 export const notificationService = {
   getForNotifier: async (notifierId) => {
-    const { data } = await api.get(`/notifications/notifier/${notifierId}`);
-    return data;
+    try {
+      const { data } = await api.get(`/notifications/notifier/${notifierId}`);
+      return data;
+    } catch (error) {
+      throw new Error(getErrorMessage(error));
+    }
   },
   markAsApplied: async (notificationId) => {
-    const { data } = await api.put(`/notifications/${notificationId}/applied`);
-    return data;
+    try {
+      const { data } = await api.put(`/notifications/${notificationId}/applied`);
+      return data;
+    } catch (error) {
+      throw new Error(getErrorMessage(error));
+    }
   },
   delete: async (notificationId) => {
-    await api.delete(`/notifications/${notificationId}`);
+    try {
+      await api.delete(`/notifications/${notificationId}`);
+      return true;
+    } catch (error) {
+      throw new Error(getErrorMessage(error));
+    }
+  },
+};
+
+// User Service
+export const userService = {
+  deleteAccount: async () => {
+    try {
+      await api.delete('/users/me');
+      return true;
+    } catch (error) {
+      throw new Error(getErrorMessage(error));
+    }
   },
 };
 
@@ -338,28 +415,48 @@ export const jobsService = {
 // User Info Service -> backend integration for education details
 export const userInfoService = {
   create: async (userInfoData) => {
-    const { data } = await api.post('/user-info', userInfoData);
-    return data;
+    try {
+      const { data } = await api.post('/user-info', userInfoData);
+      return data;
+    } catch (error) {
+      throw new Error(getErrorMessage(error));
+    }
   },
 
   getAll: async () => {
-    const { data } = await api.get('/user-info');
-    return data;
+    try {
+      const { data } = await api.get('/user-info');
+      return data;
+    } catch (error) {
+      throw new Error(getErrorMessage(error));
+    }
   },
 
   getById: async (id) => {
-    const { data } = await api.get(`/user-info/${id}`);
-    return data;
+    try {
+      const { data } = await api.get(`/user-info/${id}`);
+      return data;
+    } catch (error) {
+      throw new Error(getErrorMessage(error));
+    }
   },
 
   update: async (id, userInfoData) => {
-    const { data } = await api.put(`/user-info/${id}`, userInfoData);
-    return data;
+    try {
+      const { data } = await api.put(`/user-info/${id}`, userInfoData);
+      return data;
+    } catch (error) {
+      throw new Error(getErrorMessage(error));
+    }
   },
 
   delete: async (id) => {
-    const { data } = await api.delete(`/user-info/${id}`);
-    return data;
+    try {
+      const { data } = await api.delete(`/user-info/${id}`);
+      return data;
+    } catch (error) {
+      throw new Error(getErrorMessage(error));
+    }
   },
 };
 

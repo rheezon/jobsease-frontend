@@ -6,6 +6,7 @@ import {
   User, LogOut, ArrowLeft, Mail, ChevronDown, Moon, Sun, Edit2, Save, X as XIcon, Plus, Trash2
 } from 'lucide-react';
 import ConfirmDialog from '../components/ConfirmDialog';
+import { logger } from '../utils/logger';
 
 const Profile = () => {
   const { user, logout } = useAuth();
@@ -17,6 +18,7 @@ const Profile = () => {
   const [isEditMode, setIsEditMode] = useState(false);
   const [editedRecords, setEditedRecords] = useState([]);
   const [isSaving, setIsSaving] = useState(false);
+  const [validationErrors, setValidationErrors] = useState({});
   const [confirmDialog, setConfirmDialog] = useState({
     isOpen: false,
     title: '',
@@ -30,7 +32,7 @@ const Profile = () => {
         const records = await userInfoService.getAll();
         setEducationRecords(records);
       } catch (error) {
-        console.error('Error fetching education details:', error);
+        logger.error('Error fetching education details', { error: String(error?.message || error) });
       } finally {
         setLoading(false);
       }
@@ -67,26 +69,71 @@ const Profile = () => {
   const handleEditClick = () => {
     setEditedRecords(JSON.parse(JSON.stringify(educationRecords))); // Deep copy
     setIsEditMode(true);
+    setValidationErrors({});
   };
 
   const handleCancelEdit = () => {
     setIsEditMode(false);
     setEditedRecords([]);
+    setValidationErrors({});
   };
 
   const handleFieldChange = (index, field, value) => {
     const updated = [...editedRecords];
     updated[index][field] = value;
     setEditedRecords(updated);
+    // Clear validation error for this record when user edits
+    setValidationErrors(prev => {
+      const next = { ...prev };
+      if (next[index]) {
+        const { [field]: _removed, ...rest } = next[index];
+        next[index] = rest;
+        if (Object.keys(next[index]).length === 0) {
+          delete next[index];
+        }
+      }
+      return next;
+    });
   };
 
   const handleSaveChanges = async () => {
+    // Client-side validation
+    const errors = {};
+    editedRecords.forEach((rec, idx) => {
+      const recErrors = {};
+      if (!rec.degreeName || String(rec.degreeName).trim() === '') {
+        recErrors.degreeName = 'Degree name is required';
+      }
+      if (!rec.major || String(rec.major).trim() === '') {
+        recErrors.major = 'Major is required';
+      }
+      if (!rec.collegeType || String(rec.collegeType).trim() === '') {
+        recErrors.collegeType = 'College tier is required';
+      }
+      const year = String(rec.batchPassout || '').trim();
+      const yearNum = parseInt(year, 10);
+      if (!year) {
+        recErrors.batchPassout = 'Batch passout year is required';
+      } else if (Number.isNaN(yearNum) || yearNum < 1950 || yearNum > 2100) {
+        recErrors.batchPassout = 'Enter a valid year between 1950 and 2100';
+      }
+      if (Object.keys(recErrors).length > 0) {
+        errors[idx] = recErrors;
+      }
+    });
+    if (Object.keys(errors).length > 0) {
+      setValidationErrors(errors);
+      return;
+    }
     try {
       setIsSaving(true);
       
-      // Separate new records (without id) and existing records (with id)
+      // Determine create/update/delete sets
       const newRecords = editedRecords.filter(record => !record.id);
       const existingRecords = editedRecords.filter(record => record.id);
+      const originalIds = new Set(educationRecords.filter(r => r.id).map(r => r.id));
+      const editedIds = new Set(existingRecords.map(r => r.id));
+      const deletedIds = [...originalIds].filter(id => !editedIds.has(id));
       
       // Create new records
       const createPromises = newRecords.map(record =>
@@ -108,16 +155,20 @@ const Profile = () => {
         })
       );
 
-      await Promise.all([...createPromises, ...updatePromises]);
+      // Delete removed records
+      const deletePromises = deletedIds.map(id => userInfoService.delete(id));
+
+      await Promise.all([...createPromises, ...updatePromises, ...deletePromises]);
 
       // Refresh the data
       const updatedRecords = await userInfoService.getAll();
       setEducationRecords(updatedRecords);
       setIsEditMode(false);
       setEditedRecords([]);
+      setValidationErrors({});
     } catch (error) {
-      console.error('Error updating education details:', error);
-      alert('Failed to update education details. Please try again.');
+      logger.error('Error updating education details', { error: String(error?.message || error) });
+      // Do not alert; field errors are shown inline for validation issues
     } finally {
       setIsSaving(false);
     }
@@ -127,8 +178,8 @@ const Profile = () => {
     const newRecord = {
       degreeName: '',
       major: '',
-      collegeType: 'Tier1',
-      batchPassout: new Date().getFullYear()
+      collegeType: '',
+      batchPassout: ''
     };
     setEditedRecords([...editedRecords, newRecord]);
   };
@@ -141,29 +192,9 @@ const Profile = () => {
       confirmText: 'Delete',
       variant: 'danger',
       action: async () => {
-        try {
-          const record = editedRecords[index];
-          
-          // If the record has an id, delete it from backend
-          if (record.id) {
-            await userInfoService.delete(record.id);
-          }
-          
-          // Remove from edited records
-          const updated = editedRecords.filter((_, i) => i !== index);
-          setEditedRecords(updated);
-          
-          // If deleting from backend, refresh the data and exit edit mode
-          if (record.id) {
-            const updatedRecords = await userInfoService.getAll();
-            setEducationRecords(updatedRecords);
-            setIsEditMode(false);
-            setEditedRecords([]);
-          }
-        } catch (error) {
-          console.error('Error deleting education record:', error);
-          alert('Failed to delete education record. Please try again.');
-        }
+        // Stage deletion locally (do not call backend now). Persist on Save.
+        const updated = editedRecords.filter((_, i) => i !== index);
+        setEditedRecords(updated);
       }
     });
   };
@@ -174,19 +205,19 @@ const Profile = () => {
       <header className="dashboard-header">
         <div className="header-left">
           <div className="logo">
-            <span className="logo-text">Jobsease</span>
+            <span className="logo-text">Jobease</span>
           </div>
         </div>
         
         <div className="header-right" style={{ position: 'relative' }}>
-          <div className="theme-toggle-switch" onClick={toggleTheme}>
+          <div className="theme-toggle-switch" onClick={toggleTheme} aria-label="Toggle theme" title="Toggle theme" role="button">
             <div className={`toggle-track-theme ${theme === 'dark' ? 'active' : ''}`}>
               <div className="toggle-thumb-theme">
                 {theme === 'light' ? <Sun size={28} /> : <Moon size={28} />}
               </div>
             </div>
           </div>
-          <div className="user-profile" onClick={() => setShowUserMenu(v => !v)} style={{ cursor: 'pointer' }}>
+          <div className="user-profile" onClick={() => setShowUserMenu(v => !v)} style={{ cursor: 'pointer' }} aria-label="Open user menu" title="Open user menu" role="button">
             <span className="welcome-text">{user?.fullName?.split(' ')[0] || 'User'}</span>
             <div className="user-avatar">
               {user?.profilePhoto ? (
@@ -480,6 +511,9 @@ const Profile = () => {
                           ) : (
                             <div className="education-display-value">{edu.degreeName}</div>
                     )}
+                          {isEditMode && validationErrors[index]?.degreeName && (
+                            <span className="field-error">{validationErrors[index].degreeName}</span>
+                          )}
                   </div>
                         <div>
                           <div className="education-display-label">Major</div>
@@ -501,6 +535,9 @@ const Profile = () => {
                           ) : (
                             <div className="education-display-value">{edu.major}</div>
                           )}
+                          {isEditMode && validationErrors[index]?.major && (
+                            <span className="field-error">{validationErrors[index].major}</span>
+                          )}
                         </div>
                         <div>
                           <div className="education-display-label">College Type</div>
@@ -518,6 +555,7 @@ const Profile = () => {
                               }}
                               className="form-group"
                             >
+                              <option value="" disabled>Select college tier</option>
                               <option value="Tier1">Tier 1</option>
                               <option value="Tier2">Tier 2</option>
                               <option value="Tier3">Tier 3</option>
@@ -525,6 +563,9 @@ const Profile = () => {
                             </select>
                           ) : (
                             <div className="education-display-value">{edu.collegeType}</div>
+                          )}
+                          {isEditMode && validationErrors[index]?.collegeType && (
+                            <span className="field-error">{validationErrors[index].collegeType}</span>
                           )}
                       </div>
                         <div>
@@ -548,6 +589,9 @@ const Profile = () => {
                             />
                           ) : (
                             <div className="education-display-value">{edu.batchPassout}</div>
+                          )}
+                          {isEditMode && validationErrors[index]?.batchPassout && (
+                            <span className="field-error">{validationErrors[index].batchPassout}</span>
                           )}
                         </div>
                       </div>

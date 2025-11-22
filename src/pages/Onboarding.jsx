@@ -8,6 +8,7 @@ import {
   X, Wifi, Building, Users, Star, Clock, TrendingUp, Eye, Trash2,
   Upload, Download, Edit3, Save, Moon, Sun
 } from 'lucide-react';
+import { logger } from '../utils/logger';
 import { notifierService, userInfoService } from '../services/api';
 import ConfirmDialog from '../components/ConfirmDialog';
 
@@ -53,6 +54,28 @@ const Onboarding = () => {
   
   const { user, updateUserProfile, logout } = useAuth();
   const navigate = useNavigate();
+
+  // If user already has a notifier, skip this page
+  useEffect(() => {
+    const maybeSkipOnboarding = async () => {
+      try {
+        if (user?.onboardingCompleted) {
+          navigate('/dashboard', { replace: true });
+          return;
+        }
+        const list = await notifierService.getAll();
+        if (Array.isArray(list) && list.length > 0) {
+          await updateUserProfile({ onboardingCompleted: true });
+          navigate('/dashboard', { replace: true });
+        }
+      } catch {
+        // ignore; stay on onboarding if check fails
+      }
+    };
+    if (user) {
+      maybeSkipOnboarding();
+    }
+  }, [user, navigate, updateUserProfile]);
 
   const toggleTheme = () => {
     const newTheme = theme === 'light' ? 'dark' : 'light';
@@ -116,7 +139,7 @@ const Onboarding = () => {
     'Version Control', 'Git', 'SVN', 'Mercurial', 'GitHub', 'GitLab', 'Bitbucket'
   ];
 
-  console.log('Onboarding component rendered', { user, isLoading });
+  logger.debug('Onboarding component rendered', { userPresent: !!user, isLoading });
 
   useEffect(() => {
     if (user) {
@@ -277,6 +300,7 @@ const Onboarding = () => {
       navigate('/dashboard');
     } catch (err) {
       setError(err.message || 'An error occurred. Please try again.');
+      logger.error('Onboarding submit failed', { error: String(err?.message || err) });
     } finally {
       setIsLoading(false);
     }
@@ -296,19 +320,19 @@ const Onboarding = () => {
       <header className="dashboard-header">
         <div className="header-left">
           <div className="logo">
-            <span className="logo-text">Jobsease</span>
+            <span className="logo-text">Jobease</span>
           </div>
         </div>
         
         <div className="header-right" style={{ position: 'relative' }}>
-          <div className="theme-toggle-switch" onClick={toggleTheme}>
+          <div className="theme-toggle-switch" onClick={toggleTheme} aria-label="Toggle theme" title="Toggle theme" role="button">
             <div className={`toggle-track-theme ${theme === 'dark' ? 'active' : ''}`}>
               <div className="toggle-thumb-theme">
                 {theme === 'light' ? <Sun size={28} /> : <Moon size={28} />}
               </div>
             </div>
           </div>
-          <div className="user-profile" onClick={() => setShowUserMenu(v => !v)} style={{ cursor: 'pointer' }}>
+          <div className="user-profile" onClick={() => setShowUserMenu(v => !v)} style={{ cursor: 'pointer' }} aria-label="Open user menu" title="Open user menu" role="button">
             <span className="welcome-text">{user?.fullName?.split(' ')[0] || 'User'}</span>
             <div className="user-avatar">
               {user?.profilePhoto ? (
@@ -337,7 +361,7 @@ const Onboarding = () => {
               <CheckCircle size={16} />
             </div>
             <div className="banner-text">
-              <p>Welcome to JobSease! Let's set up your <strong>first job notifier</strong> to receive personalized job recommendations.</p>
+            <p>Welcome to Jobease! Let's set up your <strong>first job notifier</strong> to receive personalized job recommendations.</p>
             </div>
           </div>
           <div className="progress-bar">
@@ -452,13 +476,13 @@ const Onboarding = () => {
                     required
                   >
                     <option value="">Select salary range</option>
-                    <option value="0-2lpa">₹0 - ₹2 LPA</option>
-                    <option value="2-5lpa">₹2 - ₹5 LPA</option>
-                    <option value="5-10lpa">₹5 - ₹10 LPA</option>
-                    <option value="10-15lpa">₹10 - ₹15 LPA</option>
-                    <option value="15-25lpa">₹15 - ₹25 LPA</option>
-                    <option value="25-50lpa">₹25 - ₹50 LPA</option>
-                    <option value="50lpa+">₹50+ LPA</option>
+                    <option value="0-2 LPA">₹0 - ₹2 LPA</option>
+                    <option value="2-5 LPA">₹2 - ₹5 LPA</option>
+                    <option value="5-10 LPA">₹5 - ₹10 LPA</option>
+                    <option value="10-15 LPA">₹10 - ₹15 LPA</option>
+                    <option value="15-25 LPA">₹15 - ₹25 LPA</option>
+                    <option value="25-50 LPA">₹25 - ₹50 LPA</option>
+                    <option value="50+ LPA">₹50+ LPA</option>
                   </select>
                 </div>
 
@@ -484,19 +508,22 @@ const Onboarding = () => {
                 </div>
 
                 <div className="form-group">
-                  <label htmlFor="noticePeriod">Notice Period</label>
+                  <label htmlFor="noticePeriod">Notice Period *</label>
                   <select
                     id="noticePeriod"
                     name="noticePeriod"
                     value={formData.noticePeriod}
                     onChange={handleInputChange}
+                    required
                   >
                     <option value="">Select notice period</option>
-                    <option value="Immediate">Immediate / 0-15 days</option>
-                    <option value="1 Month">1 Month</option>
-                    <option value="2 Months">2 Months</option>
-                    <option value="3 Months">3 Months</option>
-                    <option value="Serving Notice">Currently Serving Notice</option>
+                    <option value="Immediate">Immediate</option>
+                    <option value="7 days">7 days</option>
+                    <option value="15 days">15 days</option>
+                    <option value="30 days">30 days</option>
+                    <option value="45 days">45 days</option>
+                    <option value="60 days">60 days</option>
+                    <option value="90 days">90 days</option>
                   </select>
                 </div>
 
@@ -525,6 +552,8 @@ const Onboarding = () => {
                           type="button"
                           onClick={() => removeSkill(skill)}
                           className="skill-remove"
+                          aria-label={`Remove skill ${skill}`}
+                          title={`Remove skill ${skill}`}
                         >
                           <X size={14} />
                         </button>

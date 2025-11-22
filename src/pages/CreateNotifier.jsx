@@ -8,6 +8,7 @@ import { extractResumeData, formatResumeData, generateLatexFromData } from '../u
 import { Upload, FileText, ArrowLeft, AlertCircle, Save as SaveIcon, Trash2, X, ChevronDown, Moon, Sun, User as UserIcon } from 'lucide-react';
 import { useAuth } from '../components/AuthProvider';
 import ConfirmDialog from '../components/ConfirmDialog';
+import { logger } from '../utils/logger';
 
 const schema = yup.object({
   name: yup.string().required('Notifier name is required'),
@@ -115,7 +116,7 @@ const CreateNotifier = () => {
         const records = await userInfoService.getAll();
         setEducationRecords(records || []);
       } catch (err) {
-        console.error('Failed to fetch education records:', err);
+        logger.error('Failed to fetch education records', { error: String(err?.message || err) });
       }
     };
     fetchEducation();
@@ -313,7 +314,7 @@ const CreateNotifier = () => {
             <ArrowLeft size={20} />
             Back to Dashboard
           </button>
-          <span className="logo-text">Jobsease</span>
+          <span className="logo-text">Jobease</span>
         </div>
         <div className="header-right" style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '16px' }}>
           {draftId && (
@@ -321,14 +322,14 @@ const CreateNotifier = () => {
               <SaveIcon size={16} /> Save Draft
             </button>
           )}
-          <div className="theme-toggle-switch" onClick={toggleTheme}>
+          <div className="theme-toggle-switch" onClick={toggleTheme} aria-label="Toggle theme" title="Toggle theme" role="button">
             <div className={`toggle-track-theme ${theme === 'dark' ? 'active' : ''}`}>
               <div className="toggle-thumb-theme">
                 {theme === 'light' ? <Sun size={28} /> : <Moon size={28} />}
               </div>
             </div>
           </div>
-          <div className="user-profile" onClick={() => setShowUserMenu(v => !v)} style={{ cursor: 'pointer' }}>
+          <div className="user-profile" onClick={() => setShowUserMenu(v => !v)} style={{ cursor: 'pointer' }} aria-label="Open user menu" title="Open user menu" role="button">
             <span className="welcome-text">{user?.fullName?.split(' ')[0] || 'User'}</span>
             <div className="user-avatar">
               {user?.profilePhoto ? (
@@ -439,7 +440,7 @@ const CreateNotifier = () => {
                 className={errors.salaryExpectation ? 'error' : ''}
                 defaultValue=""
               >
-                <option value="" disabled selected>Select salary range</option>
+                <option value="" disabled>Select salary range</option>
                 <option value="0-2 LPA">0-2 LPA</option>
                 <option value="2-5 LPA">2-5 LPA</option>
                 <option value="5-10 LPA">5-10 LPA</option>
@@ -514,6 +515,8 @@ const CreateNotifier = () => {
                         type="button"
                         onClick={() => removeSkill(skill)}
                         className="skill-remove"
+                        aria-label={`Remove skill ${skill}`}
+                        title={`Remove skill ${skill}`}
                       >
                         <X size={14} />
                       </button>

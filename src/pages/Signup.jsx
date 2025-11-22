@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { yupResolver } from '@hookform/resolvers/yup';
 import * as yup from 'yup';
@@ -21,7 +21,9 @@ const Signup = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
   
-  const { signup } = useAuth();
+  const { signup, loginWithGoogle } = useAuth();
+  const googleDivRef = useRef(null);
+  const [googleError, setGoogleError] = useState('');
   const navigate = useNavigate();
 
   const {
@@ -45,6 +47,41 @@ const Signup = () => {
       setIsLoading(false);
     }
   };
+
+  useEffect(() => {
+    setGoogleError('');
+    const clientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+    if (!window.google || !clientId) return;
+    try {
+      window.google.accounts.id.initialize({
+        client_id: clientId,
+        callback: async (response) => {
+          try {
+            if (response && response.credential) {
+              await loginWithGoogle(response.credential);
+              navigate('/dashboard');
+            } else {
+              setGoogleError('Google sign up failed. Please try again.');
+            }
+          } catch (err) {
+            setGoogleError(err.message || 'Google authentication failed.');
+          }
+        },
+        auto_select: false,
+      });
+      if (googleDivRef.current) {
+        window.google.accounts.id.renderButton(googleDivRef.current, {
+          theme: 'outline',
+          size: 'large',
+          width: 320,
+          shape: 'rectangular',
+          text: 'signup_with',
+        });
+      }
+    } catch (_) {
+      setGoogleError('Google init failed. Check client ID.');
+    }
+  }, []);
 
   return (
     <div className="modern-auth-container">
@@ -96,23 +133,17 @@ const Signup = () => {
       <div className="auth-form-section">
         <div className="auth-form-container">
           <div className="auth-header">
-            <h2 className="brand-name">Welcome to Jobsease</h2>
+            <h2 className="brand-name">Welcome to Jobease</h2>
             <h1 className="auth-title">Create Account</h1>
             <p className="auth-tagline">Find your next opportunity!</p>
           </div>
 
           <div className="auth-options">
-            <button className="google-auth-btn">
-              <div className="google-logo">
-                <div className="google-g">G</div>
-              </div>
-              Sign up with Google
-            </button>
-            
-            <div className="divider">
-              <span>or Sign up with Email</span>
-            </div>
+            <div ref={googleDivRef} style={{ display: 'flex', justifyContent: 'center' }} />
+            {googleError && <div className="error-message">{googleError}</div>}
           </div>
+
+          <div style={{ height: '1px', background: '#E1E8ED', margin: '12px 0 16px' }} />
 
           <form onSubmit={handleSubmit(onSubmit)} className="auth-form">
             {error && <div className="error-message">{error}</div>}

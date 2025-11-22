@@ -69,6 +69,22 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const loginWithGoogle = async (idToken) => {
+    try {
+      const response = await authService.googleLogin(idToken);
+      const { token, user } = response;
+      localStorage.setItem('token', token);
+      const userData = { id: user.id, email: user.email, fullName: user.fullName, onboardingCompleted: false };
+      localStorage.setItem('user', JSON.stringify(userData));
+      setUser(userData);
+      return response;
+    } catch (error) {
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      throw error;
+    }
+  };
+
   const signup = async (email, password, fullName) => {
     try {
       const response = await authService.signup(email, password, fullName);
@@ -106,6 +122,7 @@ export const AuthProvider = ({ children }) => {
   const value = {
     user,
     login,
+    loginWithGoogle,
     signup,
     logout,
     updateUserProfile,

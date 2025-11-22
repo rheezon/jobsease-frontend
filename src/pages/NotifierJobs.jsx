@@ -199,17 +199,17 @@ const NotifierJobs = () => {
             <ArrowLeft size={20} />
             Back to Dashboard
           </button>
-          <span className="logo-text">Jobsease</span>
+          <span className="logo-text">Jobease</span>
         </div>
         <div className="header-right" style={{ position: 'relative' }}>
-          <div className="theme-toggle-switch" onClick={toggleTheme}>
+          <div className="theme-toggle-switch" onClick={toggleTheme} aria-label="Toggle theme" title="Toggle theme" role="button">
             <div className={`toggle-track-theme ${theme === 'dark' ? 'active' : ''}`}>
               <div className="toggle-thumb-theme">
                 {theme === 'light' ? <Sun size={28} /> : <Moon size={28} />}
               </div>
             </div>
           </div>
-          <div className="user-profile" onClick={() => setShowUserMenu(v => !v)} style={{ cursor: 'pointer' }}>
+          <div className="user-profile" onClick={() => setShowUserMenu(v => !v)} style={{ cursor: 'pointer' }} aria-label="Open user menu" title="Open user menu" role="button">
             <span className="welcome-text">{user?.fullName?.split(' ')[0] || 'User'}</span>
             <div className="user-avatar">
               {user?.profilePhoto ? (
@@ -278,6 +278,7 @@ const NotifierJobs = () => {
                   onClick={() => navigate(`/edit-notifier/${id}`)} 
                   className="action-btn-enhanced secondary"
                   title="Edit notifier"
+                  aria-label="Edit notifier"
                 >
                   <Edit size={18} />
             </button>
@@ -285,6 +286,7 @@ const NotifierJobs = () => {
                   onClick={handleDeleteNotifier}
                   className="action-btn-enhanced danger"
                   title="Delete notifier"
+                  aria-label="Delete notifier"
                 >
                   <Trash2 size={18} />
               </button>
@@ -773,6 +775,7 @@ const NotifierJobs = () => {
                           padding: '10px 14px'
                         }}
                         title="Remove notification"
+                        aria-label="Remove notification"
                       >
                         <Trash2 size={18} />
                       </button>

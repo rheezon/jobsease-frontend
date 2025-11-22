@@ -201,19 +201,19 @@ const Dashboard = () => {
       <header className="dashboard-header">
         <div className="header-left">
           <div className="logo">
-            <span className="logo-text">Jobsease</span>
+            <span className="logo-text">Jobease</span>
           </div>
         </div>
         
         <div className="header-right" style={{ position: 'relative' }}>
-          <div className="theme-toggle-switch" onClick={toggleTheme}>
+          <div className="theme-toggle-switch" onClick={toggleTheme} aria-label="Toggle theme" title="Toggle theme" role="button">
             <div className={`toggle-track-theme ${theme === 'dark' ? 'active' : ''}`}>
               <div className="toggle-thumb-theme">
                 {theme === 'light' ? <Sun size={18} /> : <Moon size={18} />}
               </div>
             </div>
           </div>
-          <div className="user-profile" onClick={() => setShowUserMenu(v => !v)} style={{ cursor: 'pointer' }}>
+          <div className="user-profile" onClick={() => setShowUserMenu(v => !v)} style={{ cursor: 'pointer' }} aria-label="Open user menu" title="Open user menu" role="button">
             <span className="welcome-text">{user?.fullName?.split(' ')[0] || 'User'}</span>
             <div className="user-avatar">
               {user?.profilePhoto ? (
@@ -257,7 +257,7 @@ const Dashboard = () => {
                   <CheckCircle size={16} />
                 </div>
                 <div className="banner-text">
-                  <p>Welcome to JobSease! Manage your created notifiers or resume drafts you saved earlier.</p>
+                <p>Welcome to Jobease! Manage your created notifiers or resume drafts you saved earlier.</p>
                 </div>
                 <button className="banner-close" onClick={() => {
                   setShowProfileBanner(false);
@@ -383,6 +383,7 @@ const Dashboard = () => {
                             to={`/edit-notifier/${notifier.id}`}
                             className="action-btn-enhanced secondary"
                             title="Edit notifier"
+                            aria-label="Edit notifier"
                           >
                             <Edit size={18} />
                           </Link>
@@ -390,6 +391,7 @@ const Dashboard = () => {
                             onClick={() => handleDeleteNotifier(notifier.id)} 
                             className="action-btn-enhanced danger"
                             title="Delete notifier"
+                            aria-label="Delete notifier"
                           >
                             <Trash2 size={18} />
                           </button>
@@ -556,6 +558,7 @@ const Dashboard = () => {
                             onClick={() => discardDraft(draft.id)} 
                             className="action-btn-enhanced danger"
                             title="Discard draft"
+                            aria-label="Discard draft"
                           >
                             <Trash2 size={18} />
                           </button>
