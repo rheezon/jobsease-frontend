@@ -1,0 +1,16 @@
+version: "3.9"
+
+services:
+  jobease-frontend:
+    container_name: jobease-frontend
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:80"
+    restart: unless-stopped
+    # Pass Vite env vars if needed, e.g.:
+    # environment:
+    #   - VITE_API_BASE_URL=https://api.example.com
+
+
