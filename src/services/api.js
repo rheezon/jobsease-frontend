@@ -1,6 +1,7 @@
 import axios from 'axios';
 
 const API_BASE_URL = import.meta.env?.VITE_API_BASE_URL || 'http://localhost:8080/api';
+const API_ENABLED = String(import.meta.env?.VITE_ENABLE_BACKEND_API || 'false').toLowerCase() === 'true';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
@@ -8,6 +9,15 @@ const api = axios.create({
     'Content-Type': 'application/json',
   },
 });
+
+// If backend API calls are disabled, stub axios HTTP methods to prevent any outbound calls
+if (!API_ENABLED) {
+  ['get', 'post', 'put', 'delete', 'patch'].forEach((method) => {
+    api[method] = async () => {
+      throw new Error('Backend API is disabled in this build.');
+    };
+  });
+}
 
 const makeUserFriendly = (message) => {
   if (!message) return 'Something went wrong. Please try again.';
