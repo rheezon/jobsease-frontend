@@ -44,6 +44,25 @@ const CreateNotifier = () => {
   const [educationRecords, setEducationRecords] = useState([]);
   const navigate = useNavigate();
 
+  // Degree options shared with onboarding
+  const degreeOptions = [
+    'B.Tech',
+    'B.E.',
+    'M.Tech',
+    'M.E.',
+    'BCA',
+    'MCA',
+    'B.Sc',
+    'M.Sc',
+    'B.Com',
+    'M.Com',
+    'BBA',
+    'MBA',
+    'Diploma',
+    'PhD',
+    'Other'
+  ];
+
   const toggleTheme = () => {
     const newTheme = theme === 'light' ? 'dark' : 'light';
     setTheme(newTheme);
@@ -113,7 +132,14 @@ const CreateNotifier = () => {
     const fetchEducation = async () => {
       try {
         const records = await userInfoService.getAll();
-        setEducationRecords(records || []);
+        const normalized = (records || []).map(r => {
+          const known = degreeOptions.includes(r.degreeName);
+          return {
+            ...r,
+            degreeCustom: known ? '' : (r.degreeName || '')
+          };
+        });
+        setEducationRecords(normalized);
       } catch (err) {
         try { console.error('[ERROR] Failed to fetch education records', { error: String(err?.message || err) }); } catch {}
       }
@@ -152,6 +178,63 @@ const CreateNotifier = () => {
       setError(e.message || 'Failed to load draft');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Education edit helpers
+  const handleEducationChange = (index, field, value) => {
+    setEducationRecords(prev => {
+      const copy = [...prev];
+      copy[index] = { ...copy[index], [field]: value };
+      return copy;
+    });
+  };
+
+  const saveEducation = async (index) => {
+    const edu = educationRecords[index];
+    const payload = {
+      degreeName: (edu.degreeName && edu.degreeName !== 'Other') ? edu.degreeName : (edu.degreeCustom || ''),
+      collegeType: edu.collegeType || '',
+      batchPassout: edu.batchPassout ? parseInt(edu.batchPassout, 10) : undefined,
+      major: edu.major || ''
+    };
+    try {
+      let saved;
+      if (edu.id) {
+        saved = await userInfoService.update(edu.id, payload);
+      } else {
+        saved = await userInfoService.create(payload);
+      }
+      const known = degreeOptions.includes(saved.degreeName);
+      setEducationRecords(prev => {
+        const copy = [...prev];
+        copy[index] = {
+          ...saved,
+          degreeCustom: known ? '' : (saved.degreeName || '')
+        };
+        return copy;
+      });
+    } catch (err) {
+      setError(err.message || 'Failed to save education');
+    }
+  };
+
+  const addEducation = () => {
+    setEducationRecords(prev => [
+      ...prev,
+      { id: undefined, degreeName: '', degreeCustom: '', collegeType: '', batchPassout: '', major: '' }
+    ]);
+  };
+
+  const deleteEducation = async (index) => {
+    const edu = educationRecords[index];
+    try {
+      if (edu.id) {
+        await userInfoService.delete(edu.id);
+      }
+      setEducationRecords(prev => prev.filter((_, i) => i !== index));
+    } catch (err) {
+      setError(err.message || 'Failed to delete education');
     }
   };
 
@@ -396,9 +479,29 @@ const CreateNotifier = () => {
                 <option value="Software Developer">Software Developer</option>
                 <option value="Backend Developer">Backend Developer</option>
                 <option value="Frontend Developer">Frontend Developer</option>
+                <option value="Full Stack Developer">Full Stack Developer</option>
+                <option value="Mobile Developer (Android)">Mobile Developer (Android)</option>
+                <option value="Mobile Developer (iOS)">Mobile Developer (iOS)</option>
                 <option value="Data Scientist">Data Scientist</option>
+                <option value="Data Engineer">Data Engineer</option>
+                <option value="MLOps Engineer">MLOps Engineer</option>
                 <option value="DevOps Engineer">DevOps Engineer</option>
+                <option value="Site Reliability Engineer (SRE)">Site Reliability Engineer (SRE)</option>
+                <option value="Cloud Engineer">Cloud Engineer</option>
+                <option value="QA Engineer">QA Engineer</option>
+                <option value="SDET / Test Automation Engineer">SDET / Test Automation Engineer</option>
+                <option value="Security Engineer">Security Engineer</option>
+                <option value="Blockchain Developer">Blockchain Developer</option>
+                <option value="AI Engineer">AI Engineer</option>
+                <option value="NLP Engineer">NLP Engineer</option>
+                <option value="Data Analyst">Data Analyst</option>
+                <option value="Business Analyst">Business Analyst</option>
+                <option value="UI/UX Designer">UI/UX Designer</option>
+                <option value="Product Designer">Product Designer</option>
                 <option value="Product Manager">Product Manager</option>
+                <option value="Solutions Architect">Solutions Architect</option>
+                <option value="Engineering Manager">Engineering Manager</option>
+                <option value="Intern">Intern</option>
               </select>
               {errors.role && <span className="field-error">{errors.role.message}</span>}
             </div>
@@ -563,43 +666,106 @@ const CreateNotifier = () => {
             </div>
           </div>
 
-          {/* Education Details Section (Read-only) */}
-          {educationRecords.length > 0 && (
-            <div className="form-section">
+          {/* Education Details Section (Editable) */}
+          <div className="form-section">
+            <div className="education-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
               <h2>Your Education Details</h2>
-              {educationRecords.map((edu, index) => (
+              <button type="button" className="action-btn secondary" onClick={addEducation}>
+                Add Education
+              </button>
+            </div>
+            {educationRecords.length === 0 && (
+              <div className="education-display-card" style={{ padding: 12 }}>
+                <div className="education-display-value">No education records yet. Click "Add Education" to add one.</div>
+              </div>
+            )}
+            {educationRecords.map((edu, index) => {
+              const degreeSelectValue = degreeOptions.includes(edu.degreeName) ? edu.degreeName : (edu.degreeName ? 'Other' : '');
+              return (
                 <div 
-                  key={edu.id || index} 
+                  key={edu.id || `new-${index}`} 
                   className="education-display-card"
                   style={{
-                    marginBottom: educationRecords.length > 1 && index < educationRecords.length - 1 ? '12px' : '0'
+                    marginBottom: educationRecords.length > 1 && index < educationRecords.length - 1 ? '12px' : '0',
+                    padding: 12
                   }}
                 >
-                  <div className="education-display-grid">
-                    <div>
-                      <div className="education-display-label">Degree</div>
-                      <div className="education-display-value">{edu.degreeName}</div>
+                  <div className="education-display-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: 12 }}>
+                    <div className="form-group">
+                      <label>Degree</label>
+                      <select
+                        value={degreeSelectValue}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val === 'Other') {
+                            handleEducationChange(index, 'degreeName', 'Other');
+                          } else {
+                            handleEducationChange(index, 'degreeCustom', '');
+                            handleEducationChange(index, 'degreeName', val);
+                          }
+                        }}
+                      >
+                        <option value="">Select degree</option>
+                        {degreeOptions.map(opt => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
+                      {(edu.degreeName === 'Other' || (!degreeOptions.includes(edu.degreeName) && edu.degreeName)) && (
+                        <input
+                          type="text"
+                          placeholder="Enter your degree"
+                          value={edu.degreeCustom || (!degreeOptions.includes(edu.degreeName) ? edu.degreeName : '')}
+                          onChange={(e) => handleEducationChange(index, 'degreeCustom', e.target.value)}
+                          style={{ marginTop: 8 }}
+                        />
+                      )}
                     </div>
-                    <div>
-                      <div className="education-display-label">Major</div>
-                      <div className="education-display-value">{edu.major}</div>
+                    <div className="form-group">
+                      <label>Major</label>
+                      <input
+                        type="text"
+                        placeholder="e.g., Computer Science"
+                        value={edu.major || ''}
+                        onChange={(e) => handleEducationChange(index, 'major', e.target.value)}
+                      />
                     </div>
-                    <div>
-                      <div className="education-display-label">College Type</div>
-                      <div className="education-display-value">{edu.collegeType}</div>
+                    <div className="form-group">
+                      <label>College Type</label>
+                      <select
+                        value={edu.collegeType || ''}
+                        onChange={(e) => handleEducationChange(index, 'collegeType', e.target.value)}
+                      >
+                        <option value="">Select college tier</option>
+                        <option value="Tier1">Tier 1 (IIT/NIT/IIIT/Top Private)</option>
+                        <option value="Tier2">Tier 2</option>
+                        <option value="Tier3">Tier 3</option>
+                        <option value="Other">Other</option>
+                      </select>
                     </div>
-                    <div>
-                      <div className="education-display-label">Batch</div>
-                      <div className="education-display-value">{edu.batchPassout}</div>
+                    <div className="form-group">
+                      <label>Batch Passout Year</label>
+                      <input
+                        type="number"
+                        placeholder="e.g., 2020"
+                        min="1950"
+                        max="2100"
+                        value={edu.batchPassout || ''}
+                        onChange={(e) => handleEducationChange(index, 'batchPassout', e.target.value)}
+                      />
                     </div>
                   </div>
+                  <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+                    <button type="button" className="action-btn primary" onClick={() => saveEducation(index)}>
+                      Save
+                    </button>
+                    <button type="button" className="action-btn danger" onClick={() => deleteEducation(index)}>
+                      Delete
+                    </button>
+                  </div>
                 </div>
-              ))}
-              <small className="field-note education-display-note">
-                These are your education details saved during onboarding. They cannot be modified here.
-              </small>
-            </div>
-          )}
+              );
+            })}
+          </div>
 
           {/* Resume LaTeX Code Section */}
           <div className="form-section">

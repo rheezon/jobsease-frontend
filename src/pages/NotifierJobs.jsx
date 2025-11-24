@@ -22,6 +22,7 @@ const NotifierJobs = () => {
   const [showResumeViewer, setShowResumeViewer] = useState(false);
   const [currentResumeUrl, setCurrentResumeUrl] = useState('');
   const [showUserMenu, setShowUserMenu] = useState(false);
+  const [modalError, setModalError] = useState('');
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
   
   // Tab state for applied/not applied
@@ -31,6 +32,13 @@ const NotifierJobs = () => {
   const [filterCompany, setFilterCompany] = useState('');
   const [filterLocation, setFilterLocation] = useState('');
   const [filterDate, setFilterDate] = useState('');
+  const [filterRole, setFilterRole] = useState('');
+  const [filterSalary, setFilterSalary] = useState('');
+  const [filterJobType, setFilterJobType] = useState(''); // Full-Time | Internship | Part-Time | Contract
+  const [filterBatch, setFilterBatch] = useState('');
+  const [filterExperience, setFilterExperience] = useState('');
+  const [filterDeadline, setFilterDeadline] = useState('');
+  const [filterMinRelevance, setFilterMinRelevance] = useState(''); // 0..1
   
   // Notifier details collapse state
   const [isNotifierExpanded, setIsNotifierExpanded] = useState(true);
@@ -99,8 +107,14 @@ const NotifierJobs = () => {
       return false;
     }
     
-    const matchesCompany = !filterCompany || job.companyName.toLowerCase().includes(filterCompany.toLowerCase());
-    const matchesLocation = !filterLocation || job.location.toLowerCase().includes(filterLocation.toLowerCase());
+    const matchesCompany = !filterCompany || (job.companyName || '').toLowerCase().includes(filterCompany.toLowerCase());
+    const matchesLocation = !filterLocation || (job.location || '').toLowerCase().includes(filterLocation.toLowerCase());
+    const matchesRole = !filterRole || (job.role || '').toLowerCase().includes(filterRole.toLowerCase());
+    const matchesSalary = !filterSalary || (job.salary || '').toLowerCase().includes(filterSalary.toLowerCase());
+    const matchesJobType = !filterJobType || (job.jobType || '').toLowerCase() === filterJobType.toLowerCase();
+    const matchesBatch = !filterBatch || String(job.batch || '').toLowerCase().includes(filterBatch.toLowerCase());
+    const matchesExperience = !filterExperience || (job.experience || '').toLowerCase().includes(filterExperience.toLowerCase());
+    const matchesMinRelevance = !filterMinRelevance || (typeof job.relevanceScore === 'number' && job.relevanceScore >= parseFloat(filterMinRelevance));
     
     let matchesDate = true;
     if (filterDate) {
@@ -119,7 +133,29 @@ const NotifierJobs = () => {
       deadlineNotPassed = deadlineDate >= today;
     }
     
-    return matchesCompany && matchesLocation && matchesDate && deadlineNotPassed;
+    // Optional explicit deadline filter (on any tab)
+    let matchesDeadlineDate = true;
+    if (filterDeadline) {
+      if (job.deadline) {
+        const d = new Date(job.deadline);
+        const f = new Date(filterDeadline);
+        matchesDeadlineDate = d.toDateString() === f.toDateString();
+      } else {
+        matchesDeadlineDate = false;
+      }
+    }
+    
+    return matchesCompany 
+      && matchesLocation 
+      && matchesRole
+      && matchesSalary
+      && matchesJobType
+      && matchesBatch
+      && matchesExperience
+      && matchesMinRelevance
+      && matchesDate 
+      && deadlineNotPassed
+      && matchesDeadlineDate;
   });
 
   // Calculate counts for tabs
@@ -130,6 +166,13 @@ const NotifierJobs = () => {
     setFilterCompany('');
     setFilterLocation('');
     setFilterDate('');
+    setFilterRole('');
+    setFilterSalary('');
+    setFilterJobType('');
+    setFilterBatch('');
+    setFilterExperience('');
+    setFilterDeadline('');
+    setFilterMinRelevance('');
   };
 
   const handleDeleteNotifier = () => {
@@ -614,7 +657,7 @@ const NotifierJobs = () => {
               
               <div style={{ 
                 display: 'grid', 
-                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
                 gap: '16px'
               }}>
                 <div>
@@ -670,6 +713,80 @@ const NotifierJobs = () => {
                 </div>
                 
                 <div>
+                  <label className="filter-label" style={{ display: 'block', fontSize: '13px', fontWeight: 500, marginBottom: '6px' }}>
+                    Role
+                  </label>
+                  <input
+                    type="text"
+                    className="filter-input"
+                    value={filterRole}
+                    onChange={(e) => setFilterRole(e.target.value)}
+                    placeholder="e.g., Backend Developer"
+                    style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', fontSize: '14px' }}
+                  />
+                </div>
+                
+                <div>
+                  <label className="filter-label" style={{ display: 'block', fontSize: '13px', fontWeight: 500, marginBottom: '6px' }}>
+                    Salary
+                  </label>
+                  <input
+                    type="text"
+                    className="filter-input"
+                    value={filterSalary}
+                    onChange={(e) => setFilterSalary(e.target.value)}
+                    placeholder="Search salary text..."
+                    style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', fontSize: '14px' }}
+                  />
+                </div>
+                
+                <div>
+                  <label className="filter-label" style={{ display: 'block', fontSize: '13px', fontWeight: 500, marginBottom: '6px' }}>
+                    Job Type
+                  </label>
+                  <select
+                    className="filter-input"
+                    value={filterJobType}
+                    onChange={(e) => setFilterJobType(e.target.value)}
+                    style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', fontSize: '14px' }}
+                  >
+                    <option value="">All</option>
+                    <option value="Full-Time">Full-Time</option>
+                    <option value="Internship">Internship</option>
+                    <option value="Part-Time">Part-Time</option>
+                    <option value="Contract">Contract</option>
+                  </select>
+                </div>
+                
+                <div>
+                  <label className="filter-label" style={{ display: 'block', fontSize: '13px', fontWeight: 500, marginBottom: '6px' }}>
+                    Batch
+                  </label>
+                  <input
+                    type="text"
+                    className="filter-input"
+                    value={filterBatch}
+                    onChange={(e) => setFilterBatch(e.target.value)}
+                    placeholder="e.g., 2024"
+                    style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', fontSize: '14px' }}
+                  />
+                </div>
+                
+                <div>
+                  <label className="filter-label" style={{ display: 'block', fontSize: '13px', fontWeight: 500, marginBottom: '6px' }}>
+                    Experience
+                  </label>
+                  <input
+                    type="text"
+                    className="filter-input"
+                    value={filterExperience}
+                    onChange={(e) => setFilterExperience(e.target.value)}
+                    placeholder="e.g., 3+ years"
+                    style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', fontSize: '14px' }}
+                  />
+                </div>
+                
+                <div>
                   <label className="filter-label" style={{ 
                     display: 'block', 
                     fontSize: '13px', 
@@ -691,6 +808,36 @@ const NotifierJobs = () => {
                       outline: 'none',
                       transition: 'all 0.2s ease'
                     }}
+                  />
+                </div>
+                
+                <div>
+                  <label className="filter-label" style={{ display: 'block', fontSize: '13px', fontWeight: 500, marginBottom: '6px' }}>
+                    Deadline
+                  </label>
+                  <input
+                    type="date"
+                    className="filter-input"
+                    value={filterDeadline}
+                    onChange={(e) => setFilterDeadline(e.target.value)}
+                    style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', fontSize: '14px' }}
+                  />
+                </div>
+                
+                <div>
+                  <label className="filter-label" style={{ display: 'block', fontSize: '13px', fontWeight: 500, marginBottom: '6px' }}>
+                    Min Relevance (0 - 1)
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="1"
+                    step="0.01"
+                    className="filter-input"
+                    value={filterMinRelevance}
+                    onChange={(e) => setFilterMinRelevance(e.target.value)}
+                    placeholder="e.g., 0.7"
+                    style={{ width: '100%', padding: '8px 12px', borderRadius: '6px', fontSize: '14px' }}
                   />
                 </div>
               </div>
@@ -986,6 +1133,7 @@ const NotifierJobs = () => {
                 <button className="action-btn secondary" disabled={generatingPdf} onClick={async () => {
                   try {
                     setGeneratingPdf(true);
+                    setModalError('');
                     const response = await notifierService.updateResume(id, resumeLatex);
                     setOriginalResumeLatex(resumeLatex); 
                     setHasUnsavedChanges(false);
@@ -1000,20 +1148,19 @@ const NotifierJobs = () => {
                   } catch (e) { 
                     setGeneratingPdf(false);
                     
-                    // Show specific error message from backend
+                    // Show specific error message from backend inline (no alert)
                     let errorMessage = 'Failed to save and generate preview. Please try again.';
                     
                     if (e.message) {
                       if (e.message.includes('Invalid LaTeX')) {
-                        errorMessage = 'Invalid LaTeX Code:\n\n' + e.message.replace('Invalid LaTeX Code: ', '');
+                        errorMessage = 'Invalid LaTeX Code: ' + e.message.replace('Invalid LaTeX Code: ', '');
                       } else if (e.message.includes('Rate limit exceeded')) {
                         errorMessage = 'Rate limit exceeded. Try again after some time.';
                       } else {
                         errorMessage = e.message;
                       }
                     }
-                    
-                    alert(errorMessage);
+                    setModalError(errorMessage);
                   }
                 }} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                   <SaveIcon size={16} />
@@ -1026,6 +1173,13 @@ const NotifierJobs = () => {
               </div>
             </div>
             
+            {/* Inline modal error */}
+            {modalError && (
+              <div className="error-message" style={{ margin: '12px 0' }}>
+                {modalError}
+              </div>
+            )}
+
             {/* Split Screen Content */}
             <div style={{ display: 'flex', gap: '16px', flex: 1, overflow: 'hidden' }}>
               {/* Left: LaTeX Editor */}

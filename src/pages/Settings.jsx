@@ -6,6 +6,7 @@ import {
   Bell, Shield, Palette, Sun, Moon, Download, Trash2, ChevronDown
 } from 'lucide-react';
 import { userService } from '../services/api';
+import ConfirmDialog from '../components/ConfirmDialog';
 
 const Settings = () => {
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
@@ -24,6 +25,16 @@ const Settings = () => {
   
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const [error, setError] = useState('');
+  const [confirmDialog, setConfirmDialog] = useState({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+    onCancel: null,
+    variant: 'danger',
+    confirmText: 'Confirm'
+  });
 
   const toggleTheme = () => {
     const newTheme = theme === 'light' ? 'dark' : 'light';
@@ -39,24 +50,36 @@ const Settings = () => {
   };
 
   const handleLogout = () => {
-    const confirmed = window.confirm('Are you sure you want to logout?');
-    if (!confirmed) return;
-    logout();
-    navigate('/login');
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Logout',
+      message: 'Are you sure you want to logout?',
+      variant: 'warning',
+      confirmText: 'Logout',
+      onConfirm: () => {
+        logout();
+        navigate('/login');
+      }
+    });
   };
 
   const handleDeleteAccount = () => {
-    const confirmed = window.confirm('Are you sure you want to permanently delete your account? This action cannot be undone.');
-    if (!confirmed) return;
-    (async () => {
-      try {
-        await userService.deleteAccount();
-        logout();
-        navigate('/login');
-      } catch (e) {
-        alert(e.message || 'Failed to delete account.');
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Delete Account',
+      message: 'Are you sure you want to permanently delete your account? This action cannot be undone.',
+      variant: 'danger',
+      confirmText: 'Delete',
+      onConfirm: async () => {
+        try {
+          await userService.deleteAccount();
+          logout();
+          navigate('/login');
+        } catch (e) {
+          setError(e.message || 'Failed to delete account.');
+        }
       }
-    })();
+    });
   };
   const handleNotificationChange = (key) => {
     setNotifications(prev => ({
@@ -137,6 +160,13 @@ const Settings = () => {
               <h1 className="section-title">Settings</h1>
               <p className="section-subtitle">Manage your account preferences</p>
             </div>
+
+            {/* Inline error (if any) */}
+            {error && (
+              <div className="error-message" style={{ marginTop: 8 }}>
+                {error}
+              </div>
+            )}
 
             {/* Settings Sections */}
             <div style={{ display: 'flex', flexDirection: 'column', gap: '20px', marginTop: '24px' }}>
@@ -505,21 +535,7 @@ const Settings = () => {
                   </div>
                 </div>
               </div>
-              <div style={{ paddingLeft: '52px' }}>
-                <div style={{
-                  marginTop: '8px',
-                  padding: '8px 12px',
-                  background: '#FEF3C7',
-                  border: '1px solid #FCD34D',
-                  borderRadius: '8px',
-                  color: '#92400E',
-                  fontSize: '12px',
-                  fontWeight: 600,
-                  display: 'inline-block'
-                }}>
-                  Notifications are currently disabled.
-                </div>
-              </div>
+              
 
               {/* Privacy Settings removed as requested */}
 
@@ -642,6 +658,17 @@ const Settings = () => {
           </div>
         </main>
       </div>
+      {/* Confirm dialog for logout/delete actions */}
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        onClose={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}
+        onConfirm={confirmDialog.onConfirm}
+        onCancel={confirmDialog.onCancel}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        variant={confirmDialog.variant}
+        confirmText={confirmDialog.confirmText}
+      />
     </div>
   );
 };

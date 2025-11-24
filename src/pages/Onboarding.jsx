@@ -41,6 +41,7 @@ const Onboarding = () => {
   const [educationDetails, setEducationDetails] = useState([
     {
       degreeName: '',
+      degreeCustom: '',
       collegeType: '',
       batchPassout: '',
       major: '',
@@ -99,6 +100,7 @@ const Onboarding = () => {
   const addEducationEntry = () => {
     setEducationDetails([...educationDetails, {
       degreeName: '',
+      degreeCustom: '',
       collegeType: '',
       batchPassout: '',
       major: '',
@@ -117,6 +119,24 @@ const Onboarding = () => {
     updated[index][field] = value;
     setEducationDetails(updated);
   };
+
+  const degreeOptions = [
+    'B.Tech',
+    'B.E.',
+    'M.Tech',
+    'M.E.',
+    'BCA',
+    'MCA',
+    'B.Sc',
+    'M.Sc',
+    'B.Com',
+    'M.Com',
+    'BBA',
+    'MBA',
+    'Diploma',
+    'PhD',
+    'Other'
+  ];
 
   // Skills suggestions
   const skillsSuggestions = [
@@ -249,7 +269,7 @@ const Onboarding = () => {
       
       // Validate education fields
       const hasEmptyEducation = educationDetails.some(edu => 
-        !edu.degreeName || !edu.collegeType || !edu.batchPassout || !edu.major
+        !(edu.degreeName || edu.degreeCustom) || !edu.collegeType || !edu.batchPassout || !edu.major
       );
       
       if (hasEmptyEducation) {
@@ -264,15 +284,11 @@ const Onboarding = () => {
         return;
       }
       
-      await updateUserProfile({
-        onboardingCompleted: true
-      });
-      
       // Create all education records
       await Promise.all(
         educationDetails.map(edu => 
           userInfoService.create({
-            degreeName: edu.degreeName,
+            degreeName: (edu.degreeName && edu.degreeName !== 'Other') ? edu.degreeName : (edu.degreeCustom || ''),
             collegeType: edu.collegeType,
             batchPassout: parseInt(edu.batchPassout),
             major: edu.major
@@ -298,7 +314,16 @@ const Onboarding = () => {
         isDraft: false
       });
       
-      navigate('/dashboard');
+      // Mark onboarding as completed only after notifier creation to avoid early redirect
+      await updateUserProfile({
+        onboardingCompleted: true
+      });
+      
+      // Hand off the newly created notifier to dashboard for instant display
+      try {
+        localStorage.setItem('lastCreatedNotifier', JSON.stringify(createResponse));
+      } catch (_) {}
+      navigate('/dashboard', { state: { createdNotifier: createResponse } });
     } catch (err) {
       setError(err.message || 'An error occurred. Please try again.');
       try { console.error('[ERROR] Onboarding submit failed', { error: String(err?.message || err) }); } catch {}
@@ -625,16 +650,38 @@ const Onboarding = () => {
 
                   <div className="form-grid">
                     <div className="form-group">
-                      <label htmlFor={`degreeName-${index}`}>Degree Name *</label>
-                      <input
-                        type="text"
+                      <label htmlFor={`degreeName-${index}`}>Degree *</label>
+                      <select
                         id={`degreeName-${index}`}
-                        placeholder="e.g., Bachelor of Technology in Computer Science"
-                        value={edu.degreeName}
-                        onChange={(e) => handleEducationChange(index, 'degreeName', e.target.value)}
+                        value={degreeOptions.includes(edu.degreeName) ? edu.degreeName : (edu.degreeName ? 'Other' : '')}
+                        onChange={(e) => {
+                          const val = e.target.value;
+                          if (val === 'Other') {
+                            handleEducationChange(index, 'degreeName', 'Other');
+                          } else {
+                            // clear custom if selecting a predefined degree
+                            handleEducationChange(index, 'degreeCustom', '');
+                            handleEducationChange(index, 'degreeName', val);
+                          }
+                        }}
                         required
-                      />
-                      <small className="field-note">Full name of your degree</small>
+                      >
+                        <option value="">Select degree</option>
+                        {degreeOptions.map(opt => (
+                          <option key={opt} value={opt}>{opt}</option>
+                        ))}
+                      </select>
+                      { (edu.degreeName === 'Other' || (!degreeOptions.includes(edu.degreeName) && edu.degreeName)) && (
+                        <input
+                          type="text"
+                          placeholder="Enter your degree (e.g., Bachelor of Technology)"
+                          value={edu.degreeCustom || (!degreeOptions.includes(edu.degreeName) ? edu.degreeName : '')}
+                          onChange={(e) => handleEducationChange(index, 'degreeCustom', e.target.value)}
+                          style={{ marginTop: 8 }}
+                          required
+                        />
+                      )}
+                      <small className="field-note">Choose a degree or enter your own</small>
                     </div>
 
                     <div className="form-group">

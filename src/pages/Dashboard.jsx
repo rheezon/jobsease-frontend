@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../components/AuthProvider';
 import { notifierService } from '../services/api';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { 
   Plus, Bell, Settings as SettingsIcon, LogOut, Briefcase, MapPin, DollarSign, 
   Search, Home, User, FileText, MessageCircle, Compass, 
@@ -37,6 +37,7 @@ const Dashboard = () => {
   
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const toggleTheme = () => {
     const newTheme = theme === 'light' ? 'dark' : 'light';
@@ -46,7 +47,22 @@ const Dashboard = () => {
   };
 
   useEffect(() => {
-    fetchUserNotifiers();
+    // Prefer created notifier passed via route state; fallback to localStorage cache
+    let createdFromState = location.state?.createdNotifier || null;
+    if (!createdFromState) {
+      try {
+        const cached = localStorage.getItem('lastCreatedNotifier');
+        if (cached) {
+          createdFromState = JSON.parse(cached);
+          localStorage.removeItem('lastCreatedNotifier');
+        }
+      } catch {}
+    }
+    fetchUserNotifiers(createdFromState).finally(() => {
+      if (location.state?.createdNotifier || location.state?.refreshNotifiers) {
+        navigate(location.pathname, { replace: true });
+      }
+    });
   }, [user]);
 
   useEffect(() => {
@@ -55,14 +71,23 @@ const Dashboard = () => {
     }
   }, [error]);
 
-  const fetchUserNotifiers = async () => {
+  const fetchUserNotifiers = async (createdFromState = null) => {
     setLoading(true);
     try {
       const allNotifiers = await notifierService.getAll();
       
       // Filter notifiers based on isDraft field
-      const activeNotifiers = allNotifiers.filter(n => !n.isDraft);
-      const draftNotifiers = allNotifiers.filter(n => n.isDraft);
+      let activeNotifiers = allNotifiers.filter(n => !n.isDraft);
+      let draftNotifiers = allNotifiers.filter(n => n.isDraft);
+      
+      // If we just created a notifier, optimistically include it if not in list yet
+      if (createdFromState && !createdFromState.isDraft) {
+        const exists = activeNotifiers.some(n => n.id === createdFromState.id);
+        if (!exists) {
+          activeNotifiers = [createdFromState, ...activeNotifiers];
+          setActiveTab('notifiers');
+        }
+      }
       
       setNotifiers(activeNotifiers);
       setDrafts(draftNotifiers);
