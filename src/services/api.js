@@ -326,6 +326,16 @@ export const notificationService = {
       throw new Error(getErrorMessage(error));
     }
   },
+  updateResume: async (notificationId, resumeLatex) => {
+    try {
+      const { data } = await api.patch(`/notifications/${notificationId}/resume`, {
+        resumeLatex: resumeLatex
+      });
+      return data;
+    } catch (error) {
+      throw new Error(getErrorMessage(error));
+    }
+  },
 };
 
 // User Service

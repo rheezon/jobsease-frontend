@@ -20,7 +20,12 @@ const NotifierJobs = () => {
   const [pdfPreviewUrl, setPdfPreviewUrl] = useState('');
   const [generatingPdf, setGeneratingPdf] = useState(false);
   const [showResumeViewer, setShowResumeViewer] = useState(false);
-  const [currentResumeUrl, setCurrentResumeUrl] = useState('');
+  const [currentNotificationId, setCurrentNotificationId] = useState(null);
+  const [notificationResumeLatex, setNotificationResumeLatex] = useState('');
+  const [originalNotificationResumeLatex, setOriginalNotificationResumeLatex] = useState('');
+  const [hasUnsavedNotificationChanges, setHasUnsavedNotificationChanges] = useState(false);
+  const [notificationPdfPreviewUrl, setNotificationPdfPreviewUrl] = useState('');
+  const [generatingNotificationPdf, setGeneratingNotificationPdf] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [modalError, setModalError] = useState('');
   const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
@@ -1070,7 +1075,18 @@ const NotifierJobs = () => {
                   <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
                     <button 
                       onClick={() => {
-                        setCurrentResumeUrl(job.resumeLink);
+                        setCurrentNotificationId(job.id);
+                       
+                        const initialLatex = job.resumeLatex || notifier?.resumeLatex || '';
+                        setNotificationResumeLatex(initialLatex);
+                        setOriginalNotificationResumeLatex(initialLatex);
+                        setHasUnsavedNotificationChanges(false);
+                        
+                        if (job.resumeLink) {
+                          setNotificationPdfPreviewUrl(job.resumeLink + '?t=' + Date.now());
+                        } else {
+                          setNotificationPdfPreviewUrl('');
+                        }
                         setShowResumeViewer(true);
                       }}
                       className="view-resume-btn"
@@ -1252,43 +1268,156 @@ const NotifierJobs = () => {
       )}
       {showResumeViewer && (
         <div className="modal-overlay">
-          <div className="modal-container" style={{ maxWidth: 1200 }}>
+          <div className="modal-container">
             {/* Header */}
             <div className="modal-header">
-              <h3 className="modal-title">Resume Preview</h3>
-              <button 
-                className="action-btn" 
-                onClick={() => {
-                  setShowResumeViewer(false);
-                  setCurrentResumeUrl('');
-                }}
-                style={{ display: 'flex', alignItems: 'center', gap: '6px' }}
-              >
-                <X size={16} /> Close
-              </button>
-            </div>
-            {/* PDF Viewer */}
-            <div className="pdf-preview-container" style={{ flex: 1 }}>
-              {currentResumeUrl ? (
-                <iframe 
-                  src={currentResumeUrl}
-                  style={{ width: '100%', height: '100%', border: 'none' }}
-                  title="Resume Preview"
-                />
-              ) : (
-                <div style={{ 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'center', 
-                  height: '100%',
-                  color: '#6B7280',
-                  flexDirection: 'column',
-                  gap: '12px'
-                }}>
-                  <FileIcon size={48} />
-                  <div>No resume available</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <h3 className="modal-title">View Resume</h3>
+                  <span style={{ 
+                    fontSize: '12px', 
+                    color: hasUnsavedNotificationChanges ? '#DC2626' : '#059669',
+                    fontWeight: 500
+                  }}>
+                    {hasUnsavedNotificationChanges ? 'not saved' : 'saved'}
+                  </span>
                 </div>
-              )}
+                <p style={{ margin: 0, fontSize: '13px', color: '#6B7280', fontStyle: 'italic' }}>
+                  This resume has been AI-customized to match this job posting. You can edit the LaTeX code to further personalize it.
+                </p>
+              </div>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button className="action-btn" onClick={() => {
+                  setNotificationResumeLatex(originalNotificationResumeLatex);
+                  setHasUnsavedNotificationChanges(false);
+                }}>Reset</button>
+                <button className="action-btn secondary" disabled={generatingNotificationPdf} onClick={async () => {
+                  try {
+                    setGeneratingNotificationPdf(true);
+                    setModalError('');
+                    const response = await notificationService.updateResume(currentNotificationId, notificationResumeLatex);
+                    setOriginalNotificationResumeLatex(notificationResumeLatex); 
+                    setHasUnsavedNotificationChanges(false);
+                    
+                    // Update the job in the list
+                    setJobs(jobs.map(job => 
+                      job.id === currentNotificationId 
+                        ? { ...job, resumeLatex: notificationResumeLatex, resumeLink: response.resumeLink || job.resumeLink }
+                        : job
+                    ));
+                    
+                    if (response.resumeLink) {
+                      setNotificationPdfPreviewUrl(response.resumeLink + '?t=' + Date.now());
+                    } else if (response.latexResumePdfUrl) {
+                      setNotificationPdfPreviewUrl(response.latexResumePdfUrl + '?t=' + Date.now());
+                    }
+                    
+                    setGeneratingNotificationPdf(false);
+                  } catch (e) { 
+                    setGeneratingNotificationPdf(false);
+                    
+                    // Show specific error message from backend inline (no alert)
+                    let errorMessage = 'Failed to save and generate preview. Please try again.';
+                    
+                    if (e.message) {
+                      if (e.message.includes('Invalid LaTeX')) {
+                        errorMessage = 'Invalid LaTeX Code: ' + e.message.replace('Invalid LaTeX Code: ', '');
+                      } else if (e.message.includes('Rate limit exceeded')) {
+                        errorMessage = 'Rate limit exceeded. Try again after some time.';
+                      } else {
+                        errorMessage = e.message;
+                      }
+                    }
+                    setModalError(errorMessage);
+                  }
+                }} style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <SaveIcon size={16} />
+                  {generatingNotificationPdf ? 'Saving & Generating...' : 'Save & Preview'}
+                </button>
+                <button className="action-btn" onClick={() => {
+                  setShowResumeViewer(false);
+                  setCurrentNotificationId(null);
+                  setNotificationResumeLatex('');
+                  setOriginalNotificationResumeLatex('');
+                  setHasUnsavedNotificationChanges(false);
+                  setNotificationPdfPreviewUrl('');
+                }}>Close</button>
+              </div>
+            </div>
+            
+            {/* Inline modal error */}
+            {modalError && (
+              <div className="error-message" style={{ margin: '12px 0' }}>
+                {modalError}
+              </div>
+            )}
+
+            {/* Split Screen Content */}
+            <div style={{ display: 'flex', gap: '16px', flex: 1, overflow: 'hidden' }}>
+              {/* Left: LaTeX Editor */}
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                <div className="editor-label">LaTeX Code</div>
+                <textarea 
+                  value={notificationResumeLatex} 
+                  onChange={e => {
+                    setNotificationResumeLatex(e.target.value);
+                    setHasUnsavedNotificationChanges(true);
+                  }} 
+                  placeholder="Enter your LaTeX resume code here..."
+                  className="latex-textarea"
+                />
+              </div>
+              
+              {/* Right: PDF Preview */}
+              <div style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
+                <div className="editor-label">PDF Preview</div>
+                <div className="pdf-preview-container">
+                  {generatingNotificationPdf ? (
+                    <div style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center', 
+                      height: '100%',
+                      color: '#6B7280',
+                      flexDirection: 'column',
+                      gap: '12px'
+                    }}>
+                      <div style={{ 
+                        width: '48px', 
+                        height: '48px', 
+                        border: '4px solid #E5E7EB', 
+                        borderTop: '4px solid #3B82F6',
+                        borderRadius: '50%',
+                        animation: 'spin 1s linear infinite'
+                      }}></div>
+                      <div>Generating PDF...</div>
+                      <div style={{ fontSize: '12px', color: '#9CA3AF' }}>This may take a few seconds</div>
+                    </div>
+                  ) : notificationPdfPreviewUrl ? (
+                    <iframe 
+                      src={notificationPdfPreviewUrl}
+                      style={{ width: '100%', height: '100%', border: 'none' }}
+                      title="Resume PDF Preview"
+                    />
+                  ) : (
+                    <div style={{ 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center', 
+                      height: '100%',
+                      color: '#6B7280',
+                      flexDirection: 'column',
+                      gap: '12px'
+                    }}>
+                      <FileIcon size={48} />
+                      <div>No PDF preview available</div>
+                      <div style={{ fontSize: '12px', textAlign: 'center', maxWidth: '300px' }}>
+                        Update your LaTeX code, then click "Save & Preview" to generate PDF
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
         </div>
