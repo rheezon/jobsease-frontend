@@ -15,6 +15,7 @@ import CreateNotifier from './pages/CreateNotifier';
 import EditNotifier from './pages/EditNotifier';
 import NotifierJobs from './pages/NotifierJobs';
 import JobInsights from './pages/JobInsights';
+import NotFound from './pages/NotFound';
 import './App.css';
 
 // Component to handle theme based on route
@@ -121,6 +122,7 @@ function App() {
               </ProtectedRoute>
             } />
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route path="*" element={<NotFound />} />
           </Routes>
         </div>
       </Router>

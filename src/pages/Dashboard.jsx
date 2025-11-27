@@ -34,6 +34,9 @@ const Dashboard = () => {
     onCancel: null,
     variant: 'danger'
   });
+  const [notifiersPage, setNotifiersPage] = useState(1);
+  const [draftsPage, setDraftsPage] = useState(1);
+  const [pageSize, setPageSize] = useState(8);
   
   const { user, logout } = useAuth();
   const navigate = useNavigate();
@@ -202,6 +205,18 @@ const Dashboard = () => {
     draft.name?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
+  // Reset pagination when filters/tab change
+  useEffect(() => {
+    setNotifiersPage(1);
+    setDraftsPage(1);
+  }, [searchQuery, activeTab]);
+
+  // Paginated slices
+  const notifiersTotalPages = Math.max(1, Math.ceil(filteredNotifiers.length / pageSize));
+  const draftsTotalPages = Math.max(1, Math.ceil(filteredDrafts.length / pageSize));
+  const pagedNotifiers = filteredNotifiers.slice((notifiersPage - 1) * pageSize, notifiersPage * pageSize);
+  const pagedDrafts = filteredDrafts.slice((draftsPage - 1) * pageSize, draftsPage * pageSize);
+
   const navigationItems = [
     { id: 'notifiers', label: `Notifiers ${notifiers.length}`, icon: Briefcase, active: activeTab === 'notifiers', onClick: () => setActiveTab('notifiers') },
     { id: 'drafts', label: `Drafts ${drafts.length}`, icon: FileText, active: activeTab === 'drafts', onClick: () => setActiveTab('drafts') },
@@ -369,7 +384,7 @@ const Dashboard = () => {
                 </div>
               ) : (
                 <div className="notifiers-grid">
-                  {filteredNotifiers.map((notifier) => (
+                  {pagedNotifiers.map((notifier) => (
                     <div key={notifier.id} className="notifier-card-enhanced">
                       {/* Card Header */}
                       <div className="card-header-enhanced">
@@ -516,6 +531,31 @@ const Dashboard = () => {
                   ))}
                 </div>
               )}
+              {filteredNotifiers.length > 0 && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px', gap: 12, flexWrap: 'wrap' }}>
+                  <div style={{ fontSize: 13, color: '#6B7280' }}>
+                    Showing {(notifiersPage - 1) * pageSize + 1}
+                    {' - '}
+                    {Math.min(notifiersPage * pageSize, filteredNotifiers.length)} of {filteredNotifiers.length}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <button className="action-btn" disabled={notifiersPage === 1} onClick={() => setNotifiersPage(p => Math.max(1, p - 1))}>Prev</button>
+                    <span style={{ fontSize: 13 }}>Page {notifiersPage} / {notifiersTotalPages}</span>
+                    <button className="action-btn" disabled={notifiersPage >= notifiersTotalPages} onClick={() => setNotifiersPage(p => Math.min(notifiersTotalPages, p + 1))}>Next</button>
+                    <select
+                      value={pageSize}
+                      onChange={(e) => { setPageSize(parseInt(e.target.value, 10)); setNotifiersPage(1); setDraftsPage(1); }}
+                      className="filter-input"
+                      style={{ padding: '6px 10px', borderRadius: 6 }}
+                    >
+                      <option value={6}>6 / page</option>
+                      <option value={8}>8 / page</option>
+                      <option value={12}>12 / page</option>
+                      <option value={16}>16 / page</option>
+                    </select>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
@@ -551,7 +591,7 @@ const Dashboard = () => {
                 </div>
               ) : (
                 <div className="notifiers-grid">
-                  {filteredDrafts.map((draft) => (
+                  {pagedDrafts.map((draft) => (
                     <div key={draft.id} className="notifier-card-enhanced">
                       {/* Card Header */}
                       <div className="card-header-enhanced">
@@ -678,6 +718,20 @@ const Dashboard = () => {
                       </div>
                     </div>
                   ))}
+                </div>
+              )}
+              {filteredDrafts.length > 0 && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px', gap: 12, flexWrap: 'wrap' }}>
+                  <div style={{ fontSize: 13, color: '#6B7280' }}>
+                    Showing {(draftsPage - 1) * pageSize + 1}
+                    {' - '}
+                    {Math.min(draftsPage * pageSize, filteredDrafts.length)} of {filteredDrafts.length}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <button className="action-btn" disabled={draftsPage === 1} onClick={() => setDraftsPage(p => Math.max(1, p - 1))}>Prev</button>
+                    <span style={{ fontSize: 13 }}>Page {draftsPage} / {draftsTotalPages}</span>
+                    <button className="action-btn" disabled={draftsPage >= draftsTotalPages} onClick={() => setDraftsPage(p => Math.min(draftsTotalPages, p + 1))}>Next</button>
+                  </div>
                 </div>
               )}
             </div>

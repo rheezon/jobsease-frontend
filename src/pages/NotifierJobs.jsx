@@ -55,6 +55,8 @@ const NotifierJobs = () => {
     onCancel: null,
     variant: 'danger'
   });
+  const [jobsPage, setJobsPage] = useState(1);
+  const [jobsPageSize, setJobsPageSize] = useState(10);
 
   const toggleTheme = () => {
     const newTheme = theme === 'light' ? 'dark' : 'light';
@@ -166,6 +168,15 @@ const NotifierJobs = () => {
   // Calculate counts for tabs
   const notAppliedCount = jobs.filter(job => !job.applied && (!job.deadline || new Date(job.deadline) >= new Date())).length;
   const appliedCount = jobs.filter(job => job.applied).length;
+
+  // Reset paging when filters or tab change
+  useEffect(() => {
+    setJobsPage(1);
+  }, [activeTab, filterCompany, filterLocation, filterDate, filterRole, filterSalary, filterJobType, filterBatch, filterExperience, filterDeadline, filterMinRelevance]);
+
+  // Pagination for filtered jobs
+  const jobsTotalPages = Math.max(1, Math.ceil(filteredJobs.length / jobsPageSize));
+  const pagedJobs = filteredJobs.slice((jobsPage - 1) * jobsPageSize, jobsPage * jobsPageSize);
 
   const clearFilters = () => {
     setFilterCompany('');
@@ -869,7 +880,7 @@ const NotifierJobs = () => {
             </div>
           ) : (
             <div className="job-listings">
-                {filteredJobs.map(job => (
+                {pagedJobs.map(job => (
                 <div key={job.id} className="job-notification-card" style={{
                   borderRadius: '12px',
                   padding: '24px',
@@ -1122,6 +1133,31 @@ const NotifierJobs = () => {
                     </div>
                 </div>
               ))}
+              {filteredJobs.length > 0 && (
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '16px', gap: 12, flexWrap: 'wrap' }}>
+                  <div style={{ fontSize: 13, color: '#6B7280' }}>
+                    Showing {(jobsPage - 1) * jobsPageSize + 1}
+                    {' - '}
+                    {Math.min(jobsPage * jobsPageSize, filteredJobs.length)} of {filteredJobs.length}
+                  </div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <button className="action-btn" disabled={jobsPage === 1} onClick={() => setJobsPage(p => Math.max(1, p - 1))}>Prev</button>
+                    <span style={{ fontSize: 13 }}>Page {jobsPage} / {jobsTotalPages}</span>
+                    <button className="action-btn" disabled={jobsPage >= jobsTotalPages} onClick={() => setJobsPage(p => Math.min(jobsTotalPages, p + 1))}>Next</button>
+                    <select
+                      value={jobsPageSize}
+                      onChange={(e) => { setJobsPageSize(parseInt(e.target.value, 10)); setJobsPage(1); }}
+                      className="filter-input"
+                      style={{ padding: '6px 10px', borderRadius: 6 }}
+                    >
+                      <option value={5}>5 / page</option>
+                      <option value={10}>10 / page</option>
+                      <option value={15}>15 / page</option>
+                      <option value={20}>20 / page</option>
+                    </select>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </div>

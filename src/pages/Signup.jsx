@@ -225,7 +225,7 @@ const Signup = () => {
 
           <div className="auth-footer">
             <p className="terms-text">
-              By continuing you accept our standard <a href="#" className="terms-link">terms and conditions</a> and our <a href="#" className="terms-link">privacy policy</a>.
+              By continuing you accept our standard <span className="terms-link" aria-disabled="true">terms and conditions</span> and our <span className="terms-link" aria-disabled="true">privacy policy</span>.
             </p>
             <p>
               Already have an account? <Link to="/login" className="auth-link">Log in</Link>
